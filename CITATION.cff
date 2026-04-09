@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "The Adaptive Index–Point Translator: Flat Rank/Unrank for Irregular Spatial Data"
+abstract: >
+  The Adaptive Index–Point Translator (IPT) is a flat, pointer-free, and exact
+  representation for irregular d-dimensional point sets as a strictly ascending
+  sequence of strided cuboids with prefix sums. It provides O(d + log κ) rank
+  and O(d log κ) unrank, collapsing to O(d) on (strided-)regular data. A
+  greedy-plus-combine construction algorithm achieves the optimal cuboid count
+  in O(dN) time on sorted input.
+authors:
+  - family-names: Rahn
+    given-names: Mirko
+    affiliation: Fraunhofer ITWM
+    email: mirko.rahn@itwm.fraunhofer.de
+keywords:
+  - spatial indexing
+  - rank/unrank
+  - Horner scheme
+  - irregular grids
+  - adaptive data structures
+  - cuboid decomposition
+  - high-performance computing
+license: BSD-3-Clause
+repository-code: "https://github.com/mrahn/ipt"
+preferred-citation:
+  type: article
+  title: "The Adaptive Index–Point Translator: Flat Rank/Unrank for Irregular Spatial Data"
+  authors:
+    - family-names: Rahn
+      given-names: Mirko
+      affiliation: Fraunhofer ITWM
+      email: mirko.rahn@itwm.fraunhofer.de
+  journal: "ACM Transactions on Mathematical Software"
+  year: 2026
+  notes: "Under review"
