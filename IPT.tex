@@ -1,0 +1,2457 @@
+\documentclass[manuscript,screen,review]{acmart}
+
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumitem}
+
+\setcopyright{none}
+\acmJournal{TOMS}
+
+\newcommand{\llbracket}{\mathopen{[\mkern-3mu[}}
+\newcommand{\rrbracket}{\mathclose{]\mkern-3mu]}}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\theoremstyle{plain}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+
+\newcommand{\iptFilledCircle}[2]{%
+  \put(#1,#2){\circle*{2}}%
+}
+
+\newcommand{\iptOpenCircle}[2]{%
+  \put(#1,#2){\circle{2}}%
+}
+
+\newcommand{\iptFilledSquare}[2]{%
+  \put(#1,#2){\makebox(0,0){\raisebox{-0.9mm}{\rule{1.8mm}{1.8mm}}}}%
+}
+
+\newcommand{\iptLabel}[2]{%
+  \put(#1){\makebox(0,0){#2}}%
+}
+
+\newcommand{\iptRulerExample}{%
+  \begingroup
+  \setlength{\unitlength}{1mm}%
+  \footnotesize
+  \begin{picture}(86,18)
+    \put(5,8){\vector(1,0){80}}
+    \put(17,7){\line(0,1){2}}
+    \put(33,7){\line(0,1){2}}
+    \put(49,7){\line(0,1){2}}
+    \put(65,7){\line(0,1){2}}
+    \multiput(81,5)(0,2){3}{\line(0,1){1}}
+    \iptLabel{9,4}{$0$}
+    \iptLabel{17,4}{$1$}
+    \iptLabel{25,4}{$2$}
+    \iptLabel{33,4}{$3$}
+    \iptLabel{41,4}{$4$}
+    \iptLabel{49,4}{$5$}
+    \iptLabel{57,4}{$6$}
+    \iptLabel{65,4}{$7$}
+    \iptLabel{73,4}{$8$}
+    \iptLabel{17,1.5}{$b{=}1$}
+    \iptLabel{81,1.5}{$e{=}9$}
+    \iptOpenCircle{9}{8}
+    \iptOpenCircle{25}{8}
+    \iptOpenCircle{41}{8}
+    \iptOpenCircle{57}{8}
+    \iptOpenCircle{73}{8}
+    \iptFilledCircle{17}{8}
+    \iptFilledCircle{33}{8}
+    \iptFilledCircle{49}{8}
+    \iptFilledCircle{65}{8}
+    \put(33,12){\line(1,0){16}}
+    \iptLabel{41,14}{$s{=}2$}
+    \iptLabel{17,11.5}{$\operatorname{glb}{=}1$}
+    \iptLabel{65,11.5}{$\operatorname{lub}{=}7$}
+  \end{picture}%
+  \endgroup
+}
+
+\newcommand{\iptCuboidExample}{%
+  \begingroup
+  \setlength{\unitlength}{0.9mm}%
+  \footnotesize
+  \begin{picture}(114,68)
+    \put(12,8){\vector(1,0){92}}
+    \put(12,8){\vector(0,1){52}}
+    \iptLabel{106,5}{$\dim_1$ ($R_1$)}
+    \iptLabel{12,64}{$\dim_0$ ($R_0$)}
+    \iptFilledCircle{12}{16}
+    \iptFilledCircle{12}{28}
+    \iptFilledCircle{12}{40}
+    \iptFilledCircle{12}{52}
+    \iptFilledCircle{24}{8}
+    \iptFilledCircle{40}{8}
+    \iptFilledCircle{56}{8}
+    \iptFilledCircle{72}{8}
+    \iptFilledCircle{88}{8}
+    \iptLabel{8,16}{$1$}
+    \iptLabel{8,28}{$3$}
+    \iptLabel{8,40}{$5$}
+    \iptLabel{8,52}{$7$}
+    \iptLabel{24,4}{$-3$}
+    \iptLabel{40,4}{$0$}
+    \iptLabel{56,4}{$3$}
+    \iptLabel{72,4}{$6$}
+    \iptLabel{88,4}{$9$}
+    \multiput(24,16)(0,12){4}{\iptFilledCircle{0}{0}}
+    \multiput(40,16)(0,12){4}{\iptFilledCircle{0}{0}}
+    \multiput(56,16)(0,12){4}{\iptFilledCircle{0}{0}}
+    \multiput(72,16)(0,12){4}{\iptFilledCircle{0}{0}}
+    \multiput(88,16)(0,12){4}{\iptFilledCircle{0}{0}}
+    \put(21,13){\dashbox{1}(70,42){}}
+    \iptLabel{26,11}{$\operatorname{glb}{=}(1,{-}3)$}
+    \iptLabel{84,58}{$\operatorname{lub}{=}(7,9)$}
+  \end{picture}%
+  \endgroup
+}
+
+\newcommand{\iptIPTExample}{%
+  \begingroup
+  \setlength{\unitlength}{0.9mm}%
+  \footnotesize
+  \begin{picture}(112,86)
+    \put(10,8){\vector(1,0){88}}
+    \put(10,8){\vector(0,1){70}}
+    \iptLabel{101,5}{$\dim_1$}
+    \iptLabel{10,82}{$\dim_0$}
+    \iptLabel{6,18}{$1$}
+    \iptLabel{6,28}{$3$}
+    \iptLabel{6,38}{$5$}
+    \iptLabel{6,48}{$7$}
+    \iptLabel{6,63}{$10$}
+    \iptLabel{6,68}{$11$}
+    \iptLabel{6,73}{$12$}
+    \iptLabel{18,4}{$-3$}
+    \iptLabel{33,4}{$0$}
+    \iptLabel{43,4}{$2$}
+    \iptLabel{48,4}{$3$}
+    \iptLabel{53,4}{$4$}
+    \iptLabel{63,4}{$6$}
+    \iptLabel{73,4}{$8$}
+    \iptLabel{78,4}{$9$}
+    \iptLabel{83,4}{$10$}
+    \iptLabel{93,4}{$12$}
+    \iptFilledCircle{18}{18}
+    \iptFilledCircle{18}{28}
+    \iptFilledCircle{18}{38}
+    \iptFilledCircle{18}{48}
+    \iptFilledCircle{33}{18}
+    \iptFilledCircle{33}{28}
+    \iptFilledCircle{33}{38}
+    \iptFilledCircle{33}{48}
+    \iptFilledCircle{48}{18}
+    \iptFilledCircle{48}{28}
+    \iptFilledCircle{48}{38}
+    \iptFilledCircle{48}{48}
+    \iptFilledCircle{63}{18}
+    \iptFilledCircle{63}{28}
+    \iptFilledCircle{63}{38}
+    \iptFilledCircle{63}{48}
+    \iptFilledCircle{78}{18}
+    \iptFilledCircle{78}{28}
+    \iptFilledCircle{78}{38}
+    \iptFilledCircle{78}{48}
+    \put(15,15){\dashbox{1}(66,36){}}
+    \iptLabel{85,33}{$C_0$}
+    \iptFilledSquare{43}{63}
+    \iptFilledSquare{43}{68}
+    \iptFilledSquare{43}{73}
+    \iptFilledSquare{53}{63}
+    \iptFilledSquare{53}{68}
+    \iptFilledSquare{53}{73}
+    \iptFilledSquare{63}{63}
+    \iptFilledSquare{63}{68}
+    \iptFilledSquare{63}{73}
+    \iptFilledSquare{73}{63}
+    \iptFilledSquare{73}{68}
+    \iptFilledSquare{73}{73}
+    \iptFilledSquare{83}{63}
+    \iptFilledSquare{83}{68}
+    \iptFilledSquare{83}{73}
+    \iptFilledSquare{93}{63}
+    \iptFilledSquare{93}{68}
+    \iptFilledSquare{93}{73}
+    \put(39,59){\dashbox{1}(58,18){}}
+    \iptLabel{100,68}{$C_1$}
+  \end{picture}%
+  \endgroup
+}
+
+\newcommand{\iptNonUniquePanelA}{%
+  \setlength{\unitlength}{0.9mm}%
+  \begin{picture}(62,28)
+    \put(8,6){\vector(1,0){48}}
+    \put(8,6){\vector(0,1){18}}
+    \iptLabel{57,3}{$\dim_1$}
+    \iptLabel{8,26}{$\dim_0$}
+    \iptLabel{15,2}{$1$}
+    \iptLabel{23,2}{$2$}
+    \iptLabel{39,2}{$n{-}1$}
+    \iptLabel{47,2}{$n$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptFilledCircle{15}{12}
+    \iptFilledCircle{23}{12}
+    \iptFilledCircle{39}{12}
+    \iptFilledCircle{47}{12}
+    \iptFilledCircle{23}{20}
+    \iptFilledCircle{39}{20}
+    \iptFilledCircle{47}{20}
+    \iptLabel{31,12}{$\cdots$}
+    \iptLabel{31,20}{$\cdots$}
+    \put(12,9){\framebox(38,6){}}
+    \put(20,17){\dashbox{1}(30,6){}}
+  \end{picture}%
+}
+
+\newcommand{\iptNonUniquePanelB}{%
+  \setlength{\unitlength}{0.9mm}%
+  \begin{picture}(62,28)
+    \put(8,6){\vector(1,0){48}}
+    \put(8,6){\vector(0,1){18}}
+    \iptLabel{57,3}{$\dim_1$}
+    \iptLabel{8,26}{$\dim_0$}
+    \iptLabel{15,2}{$1$}
+    \iptLabel{23,2}{$2$}
+    \iptLabel{39,2}{$n{-}1$}
+    \iptLabel{47,2}{$n$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptFilledCircle{15}{12}
+    \iptFilledCircle{23}{12}
+    \iptFilledCircle{39}{12}
+    \iptFilledCircle{47}{12}
+    \iptFilledCircle{23}{20}
+    \iptFilledCircle{39}{20}
+    \iptFilledCircle{47}{20}
+    \iptLabel{31,12}{$\cdots$}
+    \iptLabel{31,20}{$\cdots$}
+    \put(12,9){\dashbox{1}(6,6){}}
+    \put(20,9){\framebox(30,14){}}
+  \end{picture}%
+}
+
+\newcommand{\iptNonUniqueOptimal}{%
+  \begingroup
+  \footnotesize
+  \begin{tabular}{@{}c@{\quad}c@{}}
+    \iptNonUniquePanelA & \iptNonUniquePanelB
+  \end{tabular}%
+  \endgroup
+}
+
+\newcommand{\iptGreedyExample}{%
+  \begingroup
+  \setlength{\unitlength}{1mm}%
+  \footnotesize
+  \begin{picture}(52,44)
+    \put(8,6){\vector(1,0){22}}
+    \put(8,6){\vector(0,1){30}}
+    \iptLabel{33,3}{$\dim_1$}
+    \iptLabel{8,39}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \multiput(14,12)(0,8){3}{\iptFilledCircle{0}{0}}
+    \multiput(22,12)(0,8){3}{\iptFilledCircle{0}{0}}
+    \put(11,9){\dashbox{1}(14,6){}}
+    \put(11,17){\dashbox{1}(14,6){}}
+    \put(11,25){\dashbox{1}(14,6){}}
+    \iptLabel{32,12}{$C_0$}
+    \iptLabel{32,20}{$C_1$}
+    \iptLabel{32,28}{$C_2$}
+  \end{picture}%
+  \endgroup
+}
+
+\newcommand{\iptGreedyMergeExample}{%
+  \begingroup
+  \setlength{\unitlength}{1mm}%
+  \footnotesize
+  \begin{picture}(52,44)
+    \put(8,6){\vector(1,0){22}}
+    \put(8,6){\vector(0,1){30}}
+    \iptLabel{33,3}{$\dim_1$}
+    \iptLabel{8,39}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \multiput(14,12)(0,8){3}{\iptFilledCircle{0}{0}}
+    \multiput(22,12)(0,8){3}{\iptFilledCircle{0}{0}}
+    \put(11,9){\dashbox{1}(14,22){}}
+    \iptLabel{32,20}{$C_0$}
+  \end{picture}%
+  \endgroup
+}
+
+\newcommand{\iptNonOptimalPanelA}{%
+  \setlength{\unitlength}{1mm}%
+  \begin{picture}(46,44)
+    \put(8,6){\vector(1,0){22}}
+    \put(8,6){\vector(0,1){30}}
+    \iptLabel{33,3}{$\dim_1$}
+    \iptLabel{8,39}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \iptFilledCircle{14}{12}
+    \iptFilledCircle{14}{20}
+    \iptFilledCircle{22}{20}
+    \iptFilledCircle{14}{28}
+    \iptFilledCircle{22}{28}
+    \put(11,9){\framebox(6,14){}}
+    \put(19,17){\dashbox{1}(6,6){}}
+    \put(11,25){\dashbox{1}(14,6){}}
+    \iptLabel{32,16}{$C_0$}
+    \iptLabel{32,20}{$C_1$}
+    \iptLabel{32,28}{$C_2$}
+  \end{picture}%
+}
+
+\newcommand{\iptNonOptimalPanelB}{%
+  \setlength{\unitlength}{1mm}%
+  \begin{picture}(46,44)
+    \put(8,6){\vector(1,0){22}}
+    \put(8,6){\vector(0,1){30}}
+    \iptLabel{33,3}{$\dim_1$}
+    \iptLabel{8,39}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \iptFilledCircle{14}{12}
+    \iptFilledCircle{14}{20}
+    \iptFilledCircle{22}{20}
+    \iptFilledCircle{14}{28}
+    \iptFilledCircle{22}{28}
+    \put(11,9){\dashbox{1}(6,6){}}
+    \put(11,17){\framebox(14,14){}}
+    \iptLabel{32,12}{$C_0$}
+    \iptLabel{32,24}{$C_1$}
+  \end{picture}%
+}
+
+\newcommand{\iptNonOptimal}{%
+  \begingroup
+  \footnotesize
+  \begin{tabular}{@{}c@{\qquad}c@{}}
+    \iptNonOptimalPanelA & \iptNonOptimalPanelB \\
+    greedy-plus-merge ($\kappa=3$) & optimal ($\kappa=2$)
+  \end{tabular}%
+  \endgroup
+}
+
+\newcommand{\iptPerDimLookup}{%
+  \begingroup
+  \footnotesize
+  \setlength{\tabcolsep}{5pt}%
+  \renewcommand{\arraystretch}{1.15}%
+  \setlength{\unitlength}{1mm}%
+  \begin{picture}(116,56)(0,8)
+    \put(60,64){\makebox(0,0)[t]{%
+      \begin{tabular}{@{}c@{}}
+        \textit{root directory} \\
+        \fbox{\begin{tabular}{lccc}
+          \hline
+          $\dim_0$ ruler & prefix & child & range \\
+          \hline
+          $\mathbf{[1,2,9)}$ & $\mathbf{0}$ & $\mathbf{A}$
+            & $\mathbf{[0,20)}$ \\
+          $[10,1,13)$ & $20$ & $B$ & $[20,38)$ \\
+          \hline
+        \end{tabular}}
+      \end{tabular}}}
+    \put(50,44){\vector(-2,-1){20}}
+    \put(70,44){\vector(2,-1){20}}
+    \put(27,31){\makebox(0,0)[t]{%
+      \begin{tabular}{@{}c@{}}
+        \textit{leaf $A$} \\
+        \fbox{\begin{tabular}{lcc}
+          \hline
+          $\dim_1$ ruler & prefix & range \\
+          \hline
+          $\mathbf{[-3,3,12)}$ & $\mathbf{0}$ &
+            $\mathbf{[0,5)}$ \\
+          \hline
+        \end{tabular}}
+      \end{tabular}}}
+    \put(93,31){\makebox(0,0)[t]{%
+      \begin{tabular}{@{}c@{}}
+        \textit{leaf $B$} \\
+        \fbox{\begin{tabular}{lcc}
+          \hline
+          $\dim_1$ ruler & prefix & range \\
+          \hline
+          $[2,2,14)$ & $0$ & $[0,6)$ \\
+          \hline
+        \end{tabular}}
+      \end{tabular}}}
+    \put(6,16){\makebox(0,0)[lt]{%
+      \begin{tabular}{@{}l@{}}
+        $\operatorname{pos}_{[1,2,9)}(5)=2$, so $0 + 2 \cdot 5 = 10$ \\
+        $\operatorname{pos}_{[-3,3,12)}(3)=2$, hence $\operatorname{pos}(5,3)=12$
+      \end{tabular}}}
+  \end{picture}%
+  \endgroup
+}
+
+\newcommand{\iptCornerStealPanelA}{%
+  \setlength{\unitlength}{0.9mm}%
+  \begin{picture}(40,56)
+    \put(8,6){\vector(1,0){18}}
+    \put(8,6){\vector(0,1){42}}
+    \iptLabel{29,3}{$\dim_1$}
+    \iptLabel{8,51}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \iptLabel{4,36}{$4$}
+    \iptLabel{4,44}{$5$}
+    \iptFilledCircle{14}{12}
+    \iptFilledCircle{14}{20}
+    \iptFilledCircle{14}{28}
+    \iptFilledCircle{14}{36}
+    \iptFilledCircle{22}{36}
+    \iptFilledCircle{14}{44}
+    \iptFilledCircle{22}{44}
+    \put(11,9){\framebox(6,22){}}
+    \put(11,33){\dashbox{1}(14,14){}}
+    \iptLabel{20,20}{$C_0^*$}
+    \iptLabel{30,40}{$C_1^*$}
+  \end{picture}%
+}
+
+\newcommand{\iptCornerStealPanelB}{%
+  \setlength{\unitlength}{0.9mm}%
+  \begin{picture}(40,56)
+    \put(8,6){\vector(1,0){18}}
+    \put(8,6){\vector(0,1){42}}
+    \iptLabel{29,3}{$\dim_1$}
+    \iptLabel{8,51}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \iptLabel{4,36}{$4$}
+    \iptLabel{4,44}{$5$}
+    \iptFilledCircle{14}{12}
+    \iptFilledCircle{14}{20}
+    \iptFilledCircle{14}{28}
+    \iptFilledCircle{14}{36}
+    \iptFilledCircle{22}{36}
+    \iptFilledCircle{14}{44}
+    \iptFilledCircle{22}{44}
+    \put(11,9){\framebox(6,30){}}
+    \put(20,34){\dashbox{1}(4,4){}}
+    \put(12,42){\dashbox{1}(12,4){}}
+    \put(10,32){\dashbox{1}(16,16){}}
+    \iptLabel{30,24}{$C_0$}
+    \iptLabel{30,36}{$C_1$}
+    \iptLabel{30,44}{$C_2$}
+    \iptLabel{14,36}{$\times$}
+    \iptLabel{28,29}{\textit{deficit}}
+    \iptLabel{28,50}{$K$}
+  \end{picture}%
+}
+
+\newcommand{\iptCornerStealPanelC}{%
+  \setlength{\unitlength}{0.9mm}%
+  \begin{picture}(40,56)
+    \put(8,6){\vector(1,0){18}}
+    \put(8,6){\vector(0,1){42}}
+    \iptLabel{29,3}{$\dim_1$}
+    \iptLabel{8,51}{$\dim_0$}
+    \iptLabel{14,2}{$1$}
+    \iptLabel{22,2}{$2$}
+    \iptLabel{4,12}{$1$}
+    \iptLabel{4,20}{$2$}
+    \iptLabel{4,28}{$3$}
+    \iptLabel{4,36}{$4$}
+    \iptLabel{4,44}{$5$}
+    \iptFilledCircle{14}{12}
+    \iptFilledCircle{14}{20}
+    \iptFilledCircle{14}{28}
+    \iptFilledCircle{14}{36}
+    \iptFilledCircle{22}{36}
+    \iptFilledCircle{14}{44}
+    \iptFilledCircle{22}{44}
+    \put(11,9){\framebox(6,22){}}
+    \put(11,33){\dashbox{1}(14,14){}}
+    \iptLabel{20,20}{$C_0^*$}
+    \iptLabel{30,40}{$C_1^*$}
+  \end{picture}%
+}
+
+\newcommand{\iptCornerSteal}{%
+  \begingroup
+  \footnotesize
+  \begin{tabular}{@{}c@{\quad}c@{\quad}c@{}}
+    \iptCornerStealPanelA &
+      \iptCornerStealPanelB &
+      \iptCornerStealPanelC \\
+    (a) Optimal & (b) After steal & (c) After combine
+  \end{tabular}%
+  \endgroup
+}
+
+\title[Adaptive Index--Point Translator]{The Adaptive Index--Point Translator}
+\subtitle{Flat Rank/Unrank for Irregular Spatial Data}
+
+\author{Mirko Rahn}
+\affiliation{%
+  \institution{Fraunhofer ITWM}
+  \city{Kaiserslautern}
+  \country{Germany}}
+\email{mirko.rahn@itwm.fraunhofer.de}
+
+\renewcommand{\shortauthors}{Rahn}
+
+\begin{document}
+
+\begin{abstract}
+Many high-performance applications rely on regular grids for compact
+metadata and constant-cost Horner-style rank/unrank mappings between
+coordinates and flat indices.
+Irregular data is often regularized at the cost of
+interpolation or zero-filled gaps.
+We present the \emph{Adaptive Index--Point Translator} (IPT), an
+adaptive, flat, and exact representation for irregular $d$-dimensional
+point sets as a strictly ascending sequence of strided cuboids with
+prefix sums.
+A binary search identifies the relevant cuboid, and the Horner scheme
+is applied inside it.
+Storage for the IPT scales with the data irregularity~$\kappa$, while
+index-to-point (\texttt{at}) costs $O(d + \log\kappa)$ and
+point-to-index (\texttt{pos}) costs $O(d\log\kappa)$, both
+collapsing to~$O(d)$ for (strided-)regular data where $\kappa=1$.
+The IPT is closed
+under geometric restriction, enabling processing units to store
+only their sub-region's metadata.
+We prove that a greedy-plus-combine construction algorithm
+achieves the optimal IPT size in $O(dN)$ time on sorted input.
+Benchmarks on twenty x86 platform/compiler combinations with regular
+grids, random subsets, and structured synthetic multiple-survey layouts show that the IPT
+reaches $169{-}180$\,Mpos/s on the tested regular grids while staying
+within $1\%$ of pure mixed-radix rank/unrank on that regular case,
+uses $13.8\%$ of the memory of a sorted-points table on the structured
+multiple-survey layouts, and accelerates \texttt{pos} by
+$9.3{-}40.7\times$ on regular grids and by ${\sim}2.33\times$ on the
+structured workloads.
+\end{abstract}
+
+\ccsdesc[500]{Theory of computation~Data structures design and analysis}
+\ccsdesc[300]{Software and its engineering~Data types and structures}
+\ccsdesc[100]{Applied computing~Physical sciences and engineering}
+
+\keywords{spatial indexing, rank/unrank, Horner scheme, irregular grids,
+adaptive data structures, cuboid decomposition, high-performance computing}
+
+\maketitle
+
+\section{Introduction}
+\label{section:introduction}
+
+Many high-performance computing (HPC) applications are built around
+regular grids because regularity provides simple data layouts and
+constant-cost mappings between coordinates and flat indices. In
+practice, regular domains are often an
+approximation. Masks, embedded geometries, task-local subsets, and
+partially structured domains introduce irregularity, often
+gradually. Structured simulation codes often operate on sparse active
+regions such as masked cells, where a regularized array is dominated
+by inactive entries. In geoscience workloads, multiple acquisitions
+with different extents and spacings are often forced onto a common
+regular grid, increasing interpolation cost and creating large
+zero-filled regions.
+
+This paper introduces the \emph{Adaptive Index--Point Translator}
+(IPT), an adaptive, flat, and exact representation for irregular
+$d$-dimensional point sets that preserves $O(d)$ rank/unrank behavior
+on (strided-)regular data. The domain is stored as a strictly
+ascending sequence of strided cuboids. A query first locates the
+relevant cuboid by binary search and then applies the Horner scheme
+within that cuboid.
+
+The IPT is part of a broader design space for extending Horner-style
+rank/unrank to irregular data. At one end there is the regular-grid
+case.  At the other end there is a recursive variant where each
+divmod step becomes a binary search over per-dimension
+directories. The IPT is in the middle: One global binary search
+resolves irregularity, the inner computation remains Horner. The
+advantage of the IPT is the data-independent and flat memory layout.
+
+The IPT is useful for HPC as it preserves the (strided-)regular case
+without penalty, represents data exactly and compactly, and uses a
+pointer-free flat layout suitable for serialization and memory
+mapping. Moreover, the IPT is closed under geometric restriction, so
+each processing unit can store only its own sub-region's
+metadata. These properties make it useful for local geometric
+processing, geometric decomposition across processing units, and
+incremental adoption in legacy regular-grid codes.
+
+Section~\ref{section:requirements} states the problem and derives the
+requirements. Section~\ref{section:existing} reviews related work.
+Sections~\ref{section:representation}, \ref{section:construction}, and
+\ref{section:design-space} develop the representation, the construction
+algorithms, and the design rationale. Sections~\ref{section:methodology}
+and~\ref{section:results} present the experimental methodology and
+results. Section~\ref{section:discussion} discusses limitations, and
+Section~\ref{section:conclusion} concludes.
+
+\paragraph{Contributions.}
+\begin{itemize}[leftmargin=*,nosep]
+  \item an adaptive flat representation for irregular $d$-dimensional point sets that
+    preserves (strided-)regular-grid rank/unrank behavior,
+  \item a Horner-to-IPT design space that connects the IPT to
+    regular-grid indexing and clarifies the recursive-versus-flat
+    trade-off,
+  \item practical linear time construction algorithms (greedy-plus-merge and
+    greedy-plus-combine), the latter proved optimal,
+  \item complexity analyses for rank/unrank, storage, geometric
+    operations, and geometric decomposability, and
+  \item a benchmark implementation and empirical evaluation on twenty
+    x86 platform/compiler combinations.
+\end{itemize}
+
+\section{Problem Statement and Requirements}
+\label{section:requirements}
+
+We consider a finite, non-empty set of points $D \subseteq \mathbb{Z}^d$
+in fixed dimension $d$, together with a flat index space
+$M = [0,N)$, $N = |D|$.
+The goal is a representation of $D$ that supports efficient bidirectional translation,
+\[
+  \operatorname{at} : M \to D,
+  \qquad
+  \operatorname{pos} : D \to M,
+\]
+such that
+\[
+  \operatorname{at}(\operatorname{pos}(p)) = p
+  \qquad\text{for all } p \in D,
+\]
+and
+\[
+  \operatorname{pos}(\operatorname{at}(n)) = n
+  \qquad\text{for all } n \in M.
+\]
+
+For integers $b < e$, we write
+\[
+  [b,e) = \{x \in \mathbb{Z} \mid b \le x < e\},
+\]
+and for integers $b < e$ and positive stride $s$, we write
+\[
+  [b,s,e) = \{ b + s i \mid 0 \le i < \lceil (e-b)/s \rceil \}.
+\]
+
+The class of represented point sets must cover at least three classes:
+\[
+\begin{tabular}{rl}
+\emph{Regular:} & $D = [b_0, e_0) \times \cdots \times [b_{d-1}, e_{d-1})$
+\\
+\emph{Strided-regular:} & $D = [b_0, s_0, e_0) \times \cdots \times [b_{d-1}, s_{d-1}, e_{d-1})$
+\\
+\emph{Irregular:} & $D \subseteq [b_0, e_0) \times \cdots \times [b_{d-1}, e_{d-1})$
+\end{tabular}
+\]
+
+
+An important intermediate case is \emph{multiple-survey} data: the union of a few possibly overlapping strided-regular point sets.
+
+The application requirements that motivate the IPT are:
+
+\paragraph{Exactness.}
+The representation must describe the point set exactly, without regularization by interpolation or neutral fill.
+
+\paragraph{Adaptive space usage.}
+Metadata must scale with the geometric structure present in the data,
+not with the volume of a regularized bounding box. If the data
+decomposes into few structured components, storage overhead must be
+small, and on (strided-)regular data, metadata must be constant for fixed $d$.
+
+\paragraph{Adaptive access time.}
+Rank/unrank must be at most logarithmic in the number of structured components and reduce to constant-cost behavior on (strided-)regular inputs.
+
+\paragraph{Flat layout.}
+The representation must admit a contiguous, pointer-free in-memory layout so that it can be serialized, memory-mapped, and used directly after loading without pointer fix-up.
+
+\paragraph{Geometric operations.}
+Region-based operations such as intersection and selection must work directly on the compressed geometry, without expanding the point set.
+
+\paragraph{Geometric decomposability.}
+When data is distributed across processing units along geometric
+boundaries, each unit needs to operate with only the metadata for its own sub-region.
+The representation must be \emph{closed under geometric restriction}: Restricting to a sub-region must produce a valid instance.
+
+\paragraph{Compatibility with existing regular-grid practice.}
+To be a useful extension the IPT must preserve the regular-grid fast
+path and therefore must not materially degrade performance when used
+with (strided-)regular data.
+
+\section{Related Work}
+\label{section:existing}
+
+This section reviews the main related approaches through the lens of the
+requirements from Section~\ref{section:requirements}.
+
+\paragraph{Explicit sparse point storage.}
+Formats such as COO and the closely related CSR and CSC layouts~\cite{Saad2003,Barrett1994}
+are exact and flexible because they store each point or nonzero
+explicitly. They therefore satisfy exactness, but they do not compress
+geometric regularity, do not provide compact rank/unrank semantics, and
+do not reduce metadata cost when the point set has strong cuboid
+structure.
+
+\paragraph{Run-length and interval encodings.}
+In one dimension, run-length encodings~\cite{Golomb1966} and interval
+representations satisfy several of the requirements. They compress
+contiguous runs, support rank/unrank, and admit flat layouts. The main
+open step is the multi-dimensional extension, where one needs cuboids
+in place of intervals together with both rank and unrank support.
+
+\paragraph{Block-sparse and tiled sparse formats.}
+Block-CSR and variable-block-row formats~\cite{ImYelickVuduc2004,Vuduc2005}
+exploit clustering by grouping entries into dense sub-blocks. The ELL
+and DIA formats studied in the GPU context by Bell and Garland~\cite{BellGarland2009}
+follow a similar idea. These formats capture some regularity and can be
+storage efficient, but they are designed around sparse linear algebra
+rather than bidirectional translation between flat indices and points.
+
+\paragraph{Space-filling curves.}
+Space-filling curves such as the Morton (Z-order) curve~\cite{Morton1966} and the Hilbert curve map multi-dimensional coordinates to a single linear index via bit-interleaving.
+The resulting ordering preserves spatial locality well enough for range queries with B\nobreakdash-trees.
+However, for a sparse subset the curve still requires an explicit list
+of occupied codes. It therefore gives an ordering rather than a
+compressed exact representation of structured sparse geometry, and its
+coordinate scrambling is not compatible with Horner-style rank/unrank.
+
+\paragraph{Spatial trees and search structures.}
+Quadtrees~\cite{FinkelBentley1974}, octrees~\cite{Meagher1982},
+k-d trees~\cite{Bentley1975}, and R-trees~\cite{Guttman1984} target
+hierarchical spatial search. They are strong on search and pruning, but
+they do not provide flat rank/unrank semantics and their pointer-based
+layouts do not match the contiguous-layout requirement.
+
+\paragraph{Hierarchical sparse grids and adaptive mesh refinement.}
+Adaptive mesh refinement (AMR)~\cite{BergerOliger1984,BergerColella1989}
+covers a domain with a hierarchy of axis-aligned rectangular patches,
+each internally regular. This is structurally close to the IPT, but AMR
+patches may overlap across refinement levels, require pointer-based
+navigation, and do not provide one global flat rank/unrank map.
+Hierarchical sparse volume representations such as VDB~\cite{Museth2013}
+adopt a B-tree-like structure with fixed branching that uniformly
+subdivides index space. Like spatial trees, they support hierarchical
+sparse access rather than flat index semantics in a contiguous,
+serialized layout.
+
+\paragraph{Positioning.}
+No single existing approach provides the full combination: exact
+representation, adaptive compression, flat rank/unrank, contiguous
+pointer-free layout, geometric decomposability, and compatibility with
+regular data. The IPT representation is built on top of well-known
+techniques (binary search, prefix sums, Horner rank/unrank). What is new is the specific combination that
+fulfils all requirements simultaneously.
+
+\section{IPT Representation and Core Operations}
+\label{section:representation}
+
+\subsection{Rulers}
+
+\begin{definition}[Ruler]
+  Let $b,e \in \mathbb{Z}$ with $b < e$, $s \in \mathbb{N}^+$ a
+  positive stride, and $s \mid (e-b)$. Let $n = (e-b)/s \in \mathbb{N}^+$.
+  A \emph{ruler} $R = [b,s,e)$ is the set
+\[
+R = [b,s,e) = \{ b + s i \mid i \in [0, n) \}
+    = \{ b, b+s,\ldots, b+s(n-1)\}.
+\]
+The mappings $\operatorname{at}_R:[0, n)\to R$ and
+  $\operatorname{pos}_R:R\to [0, n)$ are given by
+\begin{align*}
+  \operatorname{at}_R(i) &= b + s i, \text{ and}
+  \\
+  \operatorname{pos}_R(c) &= (c-b)/s.
+\end{align*}
+\end{definition}
+
+Regular contiguous intervals $[b,e)=\{c \mid b \leq c < e\}$ are the case $s=1$, that
+  is, $[b,e) = [b,1,e)$.
+The cardinality of a ruler $R=[b,s,e)$ is $|R| = (e-b)/s > 0$.
+Greatest lower bound and least upper bound of $R$ are $\operatorname{glb}(R) = b$ and $\operatorname{lub}(R) = e - s$.
+
+The mapping $\operatorname{pos}_R(c)$ is well defined: $c\in R$
+implies $c=b+sj$ for some $j\in[0,|R|)$, giving
+  $\operatorname{pos}_R(c)= j$. It follows for every ruler $R$, index $i \in [0,|R|)$, and coordinate $c \in R$ that
+$\operatorname{pos}_R(\operatorname{at}_R(i)) = i$ and $\operatorname{at}_R(\operatorname{pos}_R(c)) = c$.
+
+\begin{figure}[ht]
+\centering
+\iptRulerExample
+\caption{Ruler $R=[1,2,9)=\{1,3,5,7\}$. Filled circles: elements of $R$. Open circles: integers in range not in $R$. Dashed tick: exclusive end $e=9$. $\operatorname{glb}(R)=1$, $\operatorname{lub}(R)=7$, $|R|=4$.}
+\Description{A one-dimensional ruler on the integers from 1 to 8. Filled points mark the elements 1, 3, 5, and 7. Open points mark excluded integers. A dashed marker indicates the exclusive end at 9, and an arrow labels the stride 2.}
+\label{figure:ruler-example}
+\end{figure}
+
+\paragraph{Canonical form.}
+Without the divisibility constraint, any $e'$ with $\operatorname{lub}(R) < e' \leq
+\operatorname{lub}(R)+s$ would represent the same set, giving $s$
+distinct representations. The condition $s \mid (e-b)$ selects the unique
+representative $e = b + sn = \operatorname{lub}(R)+s$.
+Several properties are then direct consequences of the definition:
+(i)~$\operatorname{lub}(R) = e-s$, (ii)~$|R| = (e-b)/s$ is an exact integer operations with no rounding.
+(iii)~two rulers represent the same set if and only if their triples $(b,s,e)$
+are equal component-wise, enabling $O(1)$ equality.
+(iv)~the adjacency condition for merging two rulers $R_1$ and $R_2$ reduces to the test $\operatorname{lub}(R_1)+s = \operatorname{glb}(R_2)$.
+
+\subsection{Cuboids}
+
+\begin{definition}[Cuboid]
+A \emph{cuboid} is a Cartesian product of rulers,
+\[
+  C = R_0 \times \cdots \times R_{d-1}.
+  \]
+  Let $n=\prod_{j=0}^{d-1} |R_j| > 0$ and define the
+  mappings $\operatorname{at}_C:[0,n)\to C$ by
+
+\begin{align*}
+  \operatorname{at}_C(i) &= (\operatorname{at}_{R_0}(q_0 \bmod
+  |R_0|),\operatorname{at}_{R_1}(q_1 \bmod
+  |R_1|),\dots,\operatorname{at}_{R_{d-1}}(q_{d-1} \bmod |R_{d-1}|)),
+  \text{ where}
+  \\ q_{d-1}&=i, \text{ and}
+  \\ q_{k-1}&=\lfloor q_k / |R_k| \rfloor \quad\text{for } k=d{-}1,\ldots,1.
+\end{align*}
+  and $\operatorname{pos}_C:C\to [0,n)$ by
+\begin{align*}
+  \operatorname{pos}_C(p=(c_0,\ldots,c_{d-1})) &= i_d(p), \text{ where}
+\\  i_0(p) &= 0, \text{ and}
+\\  i_{k+1}(p) &= i_k(p) |R_k| + \operatorname{pos}_{R_k}(c_k) \quad\text{for } k=0,\ldots,d{-}1.
+\end{align*}
+
+\end{definition}
+
+Regular and strided-regular data are both representable by a single cuboid.
+The cardinality of $C = R_0 \times \cdots \times R_{d-1}$
+is $|C| = \prod_{j=0}^{d-1} |R_j| > 0$.
+Greatest lower bound and least upper bound of $C$ are
+$\operatorname{glb}(C) =
+(\operatorname{glb}(R_0),\ldots,\operatorname{glb}(R_{d-1}))$ and
+$\operatorname{lub}(C) =
+(\operatorname{lub}(R_0),\ldots,\operatorname{lub}(R_{d-1}))$.
+
+$\operatorname{at}_C$ and $\operatorname{pos}_C$ are inverse
+bijections: for every $i\in[0,|C|)$ and every $p\in C$ it holds
+$
+  \operatorname{pos}_C(\operatorname{at}_C(i)) = i$, and $\operatorname{at}_C(\operatorname{pos}_C(p)) = p$.
+Write $n_k=|R_k|$. Every $i\in[0,|C|)$ has a unique mixed-radix expansion
+\[
+  i = \sum_{k=0}^{d-1} a_k \prod_{\ell=k+1}^{d-1} n_\ell,
+  \qquad a_k\in[0,n_k),
+\]
+obtained by repeated division. The recursion for $\operatorname{at}_C$ extracts exactly these digits, $a_k=q_k\bmod n_k$, and returns the point $p=\operatorname{at}_C(i)$ with coordinates $p_k=\operatorname{at}_{R_k}(a_k)$. Applying $\operatorname{pos}_C$ to this point reinserts the same digits because $\operatorname{pos}_{R_k}(p_k)=a_k$, so the Horner recursion reconstructs the same mixed-radix value and therefore $\operatorname{pos}_C(\operatorname{at}_C(i))=i$. Conversely, for $p=(c_0,\ldots,c_{d-1})\in C$, let $a_k=\operatorname{pos}_{R_k}(c_k)$. Then $\operatorname{pos}_C(p)$ is the mixed-radix number with digits $(a_0,\ldots,a_{d-1})$, so the same uniqueness implies that the $q_k$ recursion inside $\operatorname{at}_C$ recovers those digits again. Hence each coordinate of $\operatorname{at}_C(\operatorname{pos}_C(p))$ equals $\operatorname{at}_{R_k}(a_k)=\operatorname{at}_{R_k}(\operatorname{pos}_{R_k}(c_k))=c_k$, and thus $\operatorname{at}_C(\operatorname{pos}_C(p))=p$.
+
+\begin{figure}[ht]
+\centering
+\iptCuboidExample
+\caption{Cuboid $C=R_0\times R_1$ where $R_0=[1,2,9)=\{1,3,5,7\}$ (the ruler of Figure~\ref{figure:ruler-example}) and $R_1=[-3,3,12)=\{-3,0,3,6,9\}$: $|R_0|=4$, $|R_1|=5$, $|C|=20$. Filled dots on the axes show the ruler elements. Dashed box marks $\operatorname{glb}(C)=(1,-3)$ to $\operatorname{lub}(C)=(7,9)$.}
+\Description{A two-dimensional cuboid defined by the Cartesian product of two rulers. The x-axis ruler has elements -3, 0, 3, 6, and 9. The y-axis ruler has elements 1, 3, 5, and 7. Filled dots mark all 20 cuboid points and a dashed rectangle shows the bounding box from (1, -3) to (7, 9).}
+\label{figure:cuboid-example}
+\end{figure}
+
+\subsection{Adaptive Index--Point Translator}
+
+\begin{definition}[Adaptive Index--Point Translator]
+An \emph{Adaptive Index--Point Translator} is a \emph{strictly ascending} sequence of cuboids
+\[
+  I = (C_0,\dots,C_{\kappa-1})
+\]
+where strictly ascending means
+$
+0 \leq i < j < \kappa \implies \operatorname{lub}(C_i) <_{\mathrm{lex}} \operatorname{glb}(C_j)
+$.
+Together with the sequence, an IPT stores the \emph{prefix sums of cardinalities}
+\[
+  r_i = \sum_{h=0}^{i-1} |C_h|, \quad r_0 = 0,
+\]
+so that cuboid $C_i$ occupies the global index interval
+$
+  [r_i, r_i + |C_i|).
+$
+The represented point set is
+$
+\llbracket I \rrbracket = \bigcup_{i=0}^{\kappa-1} C_i
+$.
+Let $\operatorname{ub}(x;\,v) = \min\{h : v < x_h\}$ be the \emph{upper bound} (first element strictly greater than $v$) and
+$\operatorname{lb}(x;\,v) = \min\{h : v \le x_h\}$ the \emph{lower bound} (first element not less than $v$)
+on a strictly increasing sequence~$x$, both standard binary-search operations.
+Define the total number of points $N_I = \sum_{h=0}^{\kappa-1}|C_h|$ and the mappings $\operatorname{at}_I:[0,N_I)\to \llbracket I \rrbracket$ and $\operatorname{pos}_I:\llbracket I \rrbracket\to [0,N_I)$ by
+\begin{align*}
+  \operatorname{at}_I(n_I)
+    &= \operatorname{at}_{C_j}(n_I-r_j),
+      &&j = \operatorname{ub}(r{+}|C|;\,n_I) = \min\bigl\{h \in [0,\kappa) : n_I < r_h + |C_h|\bigr\},
+  \\
+  \operatorname{pos}_I(p)
+    &= r_j + \operatorname{pos}_{C_j}(p),
+      &&j = \operatorname{lb}(\operatorname{lub}(C);\,p) = \min\bigl\{h \in [0,\kappa) : p \le_{\mathrm{lex}} \operatorname{lub}(C_h)\bigr\}.
+\end{align*}
+\end{definition}
+
+\begin{figure}[ht]
+\centering
+\iptIPTExample
+\caption{IPT $I=(C_0,C_1)$: $C_0$ (circles, $r_0=0$, $|C_0|=20$) is the cuboid of Figure~\ref{figure:cuboid-example}. $C_1=[10,1,13)\times[2,2,14)=\{10,11,12\}\times\{2,4,6,8,10,12\}$ (squares, $r_1=20$, $|C_1|=18$). Since $\operatorname{lub}(C_0)=(7,9)<_{\mathrm{lex}}(10,2)=\operatorname{glb}(C_1)$, the sequence is strictly ascending.}
+\Description{An IPT with two cuboids. The first cuboid is shown as circles on a lower grid and the second cuboid is shown as squares on a higher grid. Dashed rectangles mark the extent of each cuboid and illustrate their strict lexicographic ordering.}
+\label{figure:ipt-example}
+\end{figure}
+
+Since all $|C_h|>0$, the prefix sums $r_0 < r_1 < \cdots < r_{\kappa-1}$ and the right endpoints $r_0+|C_0| < \cdots < r_{\kappa-1}+|C_{\kappa-1}|$ are strictly increasing. Strict ascent implies pairwise non-overlap and $\operatorname{lub}(C_0) <_{\mathrm{lex}} \cdots <_{\mathrm{lex}} \operatorname{lub}(C_{\kappa-1})$. Hence every $p \in \llbracket I \rrbracket$ lies in a unique cuboid $C_t$, and this index is exactly
+\[
+  t = \operatorname{lb}(\operatorname{lub}(C);\,p),
+\]
+because $\operatorname{lub}(C_h) <_{\mathrm{lex}} \operatorname{glb}(C_t) \le_{\mathrm{lex}} p$ for all $h < t$, while $p \le_{\mathrm{lex}} \operatorname{lub}(C_t)$.
+
+Now let $n_I \in [0,N_I)$ and let
+$
+  j = \operatorname{ub}(r{+}|C|;\,n_I) = \min\{h \in [0,\kappa) : n_I < r_h + |C_h|\}$,
+so $n_I \in [r_j, r_j + |C_j|)$. With $p = \operatorname{at}_{C_j}(n_I-r_j) \in C_j$, the characterization above gives $\operatorname{lb}(\operatorname{lub}(C);\,p)=j$, and therefore
+\[
+  \operatorname{pos}_I(\operatorname{at}_I(n_I)) = \operatorname{pos}_I(p)
+  = r_j + \operatorname{pos}_{C_j}(p)
+  = r_j + \operatorname{pos}_{C_j}(\operatorname{at}_{C_j}(n_I-r_j))
+  = r_j + (n_I-r_j)
+  = n_I.
+\]
+
+Conversely, let $p \in \llbracket I \rrbracket$ and let $t = \operatorname{lb}(\operatorname{lub}(C);\,p)$, so $p \in C_t$. Set $\ell = \operatorname{pos}_{C_t}(p) \in [0,|C_t|)$. Then
+$
+  \operatorname{pos}_I(p) = r_t + \ell \in [r_t, r_t + |C_t|)$,
+and strict monotonicity of the right endpoints gives $\operatorname{ub}(r{+}|C|;\,\operatorname{pos}_I(p))=t$. Therefore
+\[
+  \operatorname{at}_I(\operatorname{pos}_I(p))
+  = \operatorname{at}_{C_t}(\ell)
+  = \operatorname{at}_{C_t}(\operatorname{pos}_{C_t}(p))
+  = p.
+\]
+Thus for every IPT $I$, every $n_I \in [0,N_I)$, and every $p \in \llbracket I \rrbracket$,
+$
+  \operatorname{pos}_I(\operatorname{at}_I(n_I)) = n_I$,
+  and   $\operatorname{at}_I(\operatorname{pos}_I(p)) = p
+$.
+
+If the IPT consists of one cuboid, these mappings reduce to the cuboid-local Horner scheme.
+
+\subsection{Complexity and Storage}
+
+\paragraph{Storage.}
+The metadata cost is
+\[
+  \Theta(d\kappa),
+\]
+which becomes $\Theta(d)$ when the data is (strided-)regular ($\kappa=1$).
+
+\paragraph{Index-to-point mapping.}
+The operation \texttt{at} performs a binary search on prefix sums followed by the local cuboid mapping.
+\[
+  \operatorname{at} \in O(d + \log \kappa)
+\]
+collapsing to $O(d)$ on (strided-)regular data ($\kappa=1$).
+
+\paragraph{Point-to-index mapping.}
+The operation \texttt{pos} performs a binary search over the lexicographically ordered cuboids followed by the local cuboid mapping.
+\[
+  \operatorname{pos} \in O(d\log \kappa)
+\]
+collapsing to $O(d)$ on (strided-)regular data ($\kappa=1$).
+The factor~$d$ arises because each step of the binary search compares $d$-dimensional lexicographic tuples.
+
+\subsection{Geometric Operations and Restriction}
+\label{section:operations-restriction}
+
+\paragraph{Ruler intersection.}
+Let $R=[b,s,e)$ and $R'=[b',s',e')$. Their common points are exactly the integers $c$ in the bounded interval
+\[
+  [\max(b,b'), \min(e,e'))
+\]
+that satisfy the two congruences $c \equiv b \pmod s$ and $c \equiv b' \pmod {s'}$. If these congruences are incompatible modulo $\gcd(s,s')$, the intersection is empty. Otherwise the solution set is one residue class modulo $\operatorname{lcm}(s,s')$, hence inside a bounded interval it is either empty or a canonical ruler. Computing $\gcd$, $\operatorname{lcm}$, and the first common element takes $O(1)$ arithmetic operations, so ruler intersection costs $O(1)$.
+
+\paragraph{Cuboid intersection.}
+For cuboids $C = R_0 \times \cdots \times R_{d-1}$ and $C' = R'_0 \times \cdots \times R'_{d-1}$,
+\[
+  C \cap C' = (R_0 \cap R'_0) \times \cdots \times (R_{d-1} \cap R'_{d-1}).
+\]
+Hence the intersection is empty if and only if at least one ruler intersection is empty. Otherwise, it is again a cuboid. Since there are $d$ coordinate directions and each ruler intersection costs $O(1)$, cuboid intersection costs $O(d)$.
+
+\paragraph{IPT-cuboid intersection and selection.}
+Let $Q$ be a query cuboid. A binary lower-bound search on $\operatorname{lub}(C_0),\ldots,\operatorname{lub}(C_{\kappa-1})$ finds the first cuboid whose lexicographic interval is not entirely before~$Q$. Scanning forward until $\operatorname{glb}(C_h) >_{\mathrm{lex}} \operatorname{lub}(Q)$ visits every candidate. Each candidate is tested by a cuboid intersection. If $t$ candidates are visited, the total cost is $O(d\log \kappa + dt)$.
+
+The non-empty intersections $C_h \cap Q$ form a valid sub-IPT: each is a cuboid (by the cuboid-intersection property above), they are pairwise disjoint because the original cuboids are, and they inherit strict lexicographic ascent because every point of $C_h \cap Q$ lies inside~$C_h$. The IPT is therefore closed under geometric restriction.
+
+These complexities match the requirements of Section~\ref{section:requirements}: storage and access scale with~$\kappa$ and collapse to $O(d)$ when $\kappa=1$.
+
+\begin{table}[ht]
+\centering
+\caption{Requirements from Section~\ref{section:requirements} and the corresponding IPT properties.}
+\Description{A two-column summary table mapping each stated requirement, such as exactness, adaptive space, adaptive access time, and flat layout, to the corresponding property provided by the IPT.}
+\label{table:requirements-summary}
+\begin{tabular}{lp{0.62\textwidth}}
+\toprule
+Requirement & IPT property \\
+\midrule
+Exactness
+  & The represented set equals the union of cuboid point
+    sets, with no regularization, interpolation, or fill. \\
+Adaptive space
+  & Metadata is $O(d\kappa)$. On (strided-)regular data $\kappa = 1$
+    and the footprint is constant for fixed~$d$.
+    On the structured multiple-survey scenarios the IPT uses $13.8\%$
+    of the sorted-points footprint with the selected default
+    configuration and $10.5\%$ in the minimal-footprint
+    configuration. \\
+Adaptive access time
+  & \texttt{at} is $O(d+\log\kappa)$ and \texttt{pos} is
+    $O(d\log\kappa)$.
+    On (strided-)regular data ($\kappa = 1$) both reduce to $O(d)$.
+    Measured \texttt{pos} reaches ${\sim}180$\,Mpos/s on a regular
+    $100{\times}100{\times}100$ grid. \\
+Flat layout
+  & A single contiguous vector of entries, with no pointers and no
+    tree nodes. Directly serializable and memory-mappable. \\
+Geometric operations
+  & Intersection and selection operate on cuboid metadata
+    without expanding the point set. \\
+Geometric decomposability
+  & The IPT is closed under geometric restriction. Restricting
+    to a sub-region yields a valid sub-IPT formed from the
+    intersected cuboids, without requiring the full global IPT. \\
+Horner compatibility
+  & Inside each cuboid the unchanged Horner scheme
+    is reused, and the IPT adds only the cuboid-selection step. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Construction Algorithms}
+\label{section:construction}
+
+The IPT is only as effective as the decomposition into cuboids. This section states the decomposition problem, its complexity-theoretic baseline, and develops increasingly refined construction algorithms.
+
+\subsection{Decomposition Problem}
+\label{section:decomposition-problem}
+
+Given a finite point set $D \subseteq \mathbb{Z}^d$, the decomposition problem is to represent $D$ as a disjoint union of cuboids,
+\[
+  D = C_0 \;\dot\cup\; \cdots \;\dot\cup\; C_{\kappa-1}.
+\]
+
+\paragraph{Existence and extremal size.}
+Every finite point set admits an IPT decomposition, because singleton points are degenerate cuboids. Moreover,
+\[
+  1 \le \kappa \le N,
+\]
+where $\kappa=1$ if and only if the data is (strided-)regular. The upper bound $\kappa=N$ is attained when no two points belong to a common cuboid of size greater than one. For example, the set $D=\{(1,1),(2,3),(3,2)\} \subset \mathbb{Z}^2$ requires $\kappa=3$ singleton cuboids, because any pair of points differs in both dimensions with incompatible spacing, so no two of them form a $1{\times}2$, $2{\times}1$, or strided cuboid. In general, $\kappa=N$ is possible for up to $\Theta(n^{d-1})$ points in a bounding box of side length~$n$: two points that share a coordinate in $d-1$ or more dimensions always form a two-point cuboid, so every all-singletons set maps injectively into every $(d{-}1)$-dimensional projection, bounding its size by~$n^{d-1}$.
+
+\paragraph{Non-uniqueness of optimal decompositions.}
+Minimum-$\kappa$ decompositions need not be unique. As an example for $n \geq 2$, let
+$
+  D \;=\; \bigl([1,2){\times}[1,n{+}1)\bigr)\cup \bigl([2,3){\times}[2,n{+}1)\bigr).
+$
+Figure~\ref{figure:unique_decomposition_is_not_optimal} shows two different optimal decompositions of $D$.
+\begin{figure}[ht]
+\centering
+\iptNonUniqueOptimal
+\caption{Two distinct optimal decompositions of the same two-dimensional point set with minimum cuboid count $\kappa_{\mathrm{opt}}=2$.}
+\Description{Two side-by-side decompositions of the same staircase-shaped point set. The left decomposition uses one long horizontal strip and one shorter strip above it. The right decomposition uses a single-point column on the left and one larger rectangle on the right. Both use two cuboids and are therefore optimal.}\label{figure:unique_decomposition_is_not_optimal}
+\end{figure}
+Nevertheless, because every IPT operation depends on $\kappa$ rather than on the sizes of individual cuboids, all optimal decompositions have the same storage- and query costs.
+
+\subsection{Dynamic Programming Baseline}
+
+Because the strictly ascending condition forces any valid decomposition to partition the lexicographically sorted input into contiguous segments, each of which forms a cuboid, the minimum-$\kappa$ decomposition can be found by dynamic programming on the sorted sequence. Let $\operatorname{opt}[i]$ denote the minimum number of cuboids needed to cover points $1, \ldots, i$. The recurrence is
+\[
+  \operatorname{opt}[i] = \min_{\substack{0 \leq j < i \\ \text{points } j{+}1, \ldots, i \text{ form a cuboid}}} \bigl(\operatorname{opt}[j] + 1\bigr),
+\]
+with $\operatorname{opt}[0] = 0$. The dynamic program considers $\Theta(N^2)$ contiguous segments. To verify that one segment forms a cuboid requires (without specific pre-processing) to scan all points in that segment, so the naive running time is $\Theta(dN^3)$ on sorted input.
+
+While optimal, the naive $\Theta(dN^3)$ baseline (and also a potential improved $\Theta(dN^2)$ execution time) is prohibitive for large inputs. The following subsections present linear-time algorithms, culminating in greedy-plus-combine which matches the dynamic programming optimum at cost $O(dN)$.
+
+\subsection{Greedy Construction}
+
+Assume that the points of $D$ are given in lexicographic order. The
+greedy algorithm scans the points once and maintains the current last cuboid.
+\begin{enumerate}[leftmargin=*]
+  \item Start the first cuboid with the first point.
+  \item For each next point, test whether adding it to the last cuboid keeps that cuboid strided-regular.
+  \item If yes, extend the last cuboid.
+  \item Otherwise, start a new cuboid containing just that point.
+\end{enumerate}
+
+This algorithm is linear. However, even regular data can be split into multiple cuboids, because a prefix of a cuboid need not itself be a cuboid.
+
+\paragraph{Example.}
+Consider the regular grid $D = [1,4) \times [1,3)$ with $N=6$ points. In lexicographic order, the greedy algorithm processes $(1,1),(1,2),(2,1),(2,2),(3,1),(3,2)$. After $(1,1)$ and $(1,2)$, the current cuboid is $C_0 = [1,2) \times [1,3)$. The next point $(2,1)$ cannot extend $C_0$, because the set $\{(1,1),(1,2),(2,1)\}$ is not a cuboid. The algorithm therefore emits $C_0$ and starts a new cuboid. The same happens at $(3,1)$, producing three cuboids $C_0,C_1,C_2$, one per row (Figure~\ref{figure:greedy-example}), even though the input is a single regular cuboid.
+
+\begin{figure}[ht]
+\centering
+\iptGreedyExample
+\caption{Greedy decomposition of $D=[1,4)\times[1,3)$: three cuboids ($\kappa=3$), one per row.}
+\Description{A three-by-two regular grid split by the greedy algorithm into three separate horizontal cuboids, one per row.}
+\label{figure:greedy-example}
+\end{figure}
+
+\subsection{Greedy Plus Merge}
+
+The improved algorithm augments the greedy scan with local repair.
+\begin{enumerate}[leftmargin=*]
+  \item Process the next point as in the basic greedy algorithm.
+  \item Whenever the last cuboid changes, test whether it can be merged with the previous cuboid.
+  \item If a merge is possible, merge the two cuboids and repeat the same check backward.
+  \item Stop when no further backward merge is possible.
+\end{enumerate}
+
+Two cuboids can be merged if and only if they are equal in all but one dimension and their rulers in the remaining dimension extend to a single larger ruler. For non-singleton rulers this is the usual equal-stride adjacency condition. Two singleton rulers always extend to a two-point ruler, and a singleton extends a non-singleton ruler exactly when it lies one stride before or after that ruler. This merge test is local and has cost $O(d)$.
+The greedy mechanism maintains strict ascent: a new cuboid is only appended (or merged into the current last one) when its glb is strictly greater in lexicographic order than the lub of the current last cuboid, which is the defining condition of a valid IPT.
+
+\paragraph{Example (continued).}
+Applied to the same grid $D=[1,4)\times[1,3)$, the greedy-plus-merge algorithm initially produces $C_0=[1,2)\times[1,3)$ and $C_1=[2,3)\times[1,3)$ as before. Since $C_0$ and $C_1$ agree in dimension~1 and are adjacent in dimension~0, they merge into $C_0=[1,3)\times[1,3)$. After processing $(3,1)$ and $(3,2)$, the new $C_1=[3,4)\times[1,3)$ merges with $C_0$ in the same way, recovering the single cuboid $C_0=[1,4)\times[1,3)$ (Figure~\ref{figure:greedy-merge-example}).
+
+\begin{figure}[ht]
+\centering
+\iptGreedyMergeExample
+\caption{Greedy-plus-merge result for $D=[1,4)\times[1,3)$: a single cuboid ($\kappa=1$).}
+\Description{The same three-by-two regular grid as in the previous figure, now shown as one merged cuboid covering all points.}
+\label{figure:greedy-merge-example}
+\end{figure}
+
+\paragraph{Construction complexity.}
+The greedy-plus-merge algorithm runs in time $O(dN)$ on sorted
+input. Each of the $N$ greedy steps costs $O(d)$ and creates at most
+one new cuboid, so at most $N$ cuboids are created in total. Each
+merge reduces the cuboid count by one at cost $O(d)$, so the total number of merges is at most $N-1$. The total work is therefore $O(dN)$ for greedy steps plus $O(dN)$ for all merges.
+
+\paragraph{Recovery of one-cuboid inputs.}
+If the input point set is representable by a single cuboid, then the greedy-plus-merge algorithm reconstructs a one-cuboid decomposition. Moreover, the number of intermediate cuboids at any point during the algorithm is at most~$d$.
+
+The proof (Appendix~\ref{proof:one-cuboid-recovery}) is by induction on~$d$. The key observation is that a $d$-dimensional cuboid decomposes in lexicographic order into constant-$\dim_0$ slices, each a $(d{-}1)$-dimensional cuboid.  By the induction hypothesis each slice collapses to a single cuboid, and consecutive slices share the same $(d{-}1)$-dimensional ruler and differ only in~$\dim_0$, so they merge.  The bound of~$d$ intermediates follows because at most one accumulated cuboid coexists with the at most $d{-}1$ intermediates of the current slice.
+
+\paragraph{Non-optimality.}
+The greedy-plus-merge algorithm does not necessarily produce a
+decomposition with the minimum number of cuboids. Consider the five-point set in Figure~\ref{figure:non-optimal}
+\[
+  D = \{(1,1),(2,1),(2,2),(3,1),(3,2)\} \subset \mathbb{Z}^2.
+\]
+In lexicographic order, the greedy scan starts $C_0=[1,2){\times}[1,2)$ from $(1,1)$. At~$(2,1)$ the greedy extends~$C_0$ to $[1,3){\times}[1,2)$, because $\{(1,1),(2,1)\}$ is a valid cuboid. Then $(2,2)$ cannot extend~$C_0$, producing $C_1=[2,3){\times}[2,3)$, which does not merge with~$C_0$ (both rulers differ). Similarly, $(3,1)$ starts $C_2=[3,4){\times}[1,2)$, and $(3,2)$ extends it to $[3,4){\times}[1,3)$, which does not merge with~$C_1$. The result has $\kappa=3$ cuboids:
+\[
+  [1,3){\times}[1,2),\;
+  [2,3){\times}[2,3),\;
+  [3,4){\times}[1,3).
+\]
+However, a decomposition with $\kappa=2$ cuboids exists:
+\[
+  [1,2){\times}[1,2),\;
+  [2,4){\times}[1,3).
+\]
+
+The structural cause is that the greedy criterion is purely local: at point $(2,1)$ the extension of $C_0$ from $[1,2){\times}[1,2)$ to $[1,3){\times}[1,2)$ is valid but prevents $(2,1)$ from later participating in the larger cuboid $[2,4){\times}[1,3)$. No backward merge can recover from this: neither $(C_0, C_1)$ nor $(C_1, C_2)$ satisfies the merge condition (both ruler pairs differ in each case).
+
+\begin{figure}[ht]
+\centering
+\iptNonOptimal
+\caption{Non-optimality of greedy-plus-merge on $D=\{(1,1),(2,1),(2,2),(3,1),(3,2)\}$. Left: the greedy-plus-merge result with $\kappa=3$. Right: an optimal decomposition with $\kappa=2$.}
+\Description{Two side-by-side decompositions of a five-point set in two dimensions. The left panel shows the greedy-plus-merge result with three cuboids. The right panel shows an optimal decomposition with two cuboids.}
+\label{figure:non-optimal}
+\end{figure}
+
+\paragraph{Approximation ratio.}
+The corner-steal construction shows that the greedy-plus-merge can produce at least $(d+1)/2$ times as many cuboids as the optimum.
+
+\emph{Lower bound (corner-steal).}
+Let $p = (0,1,\ldots,1)$ and consider $D = \{p\} \cup [1,m{+}1)^d$ for some $m \geq 2$, with optimal decomposition $C^*_0 = \{p\}$, $C^*_1 = [1,m{+}1)^d$ ($\kappa_{\text{opt}} = 2$). The greedy scan extends $\{p\}$ with the lexicographically first corner $(1,\ldots,1)$ of~$C^*_1$ into the cuboid $[0,2){\times}[1,2)^{d-1}$. We call this a \emph{corner-steal}. The greedy-plus-merge then processes the remaining $m^d - 1$ points of $C^*_1$ and produces exactly $d$ additional cuboids, shown by induction on~$d$.
+
+For $d = 2$, the greedy produces a partial first row
+$
+  [1,2){\times}[2,m{+}1)
+$
+and full remaining rows
+$  [2,m{+}1){\times}[1,m{+}1)$.
+Backward merging between them fails because their dim$_1$ rulers differ,
+namely $[2,m{+}1)$ versus $[1,m{+}1)$, so the result has $2$ cuboids.
+
+For $d \geq 3$, the first dim$_0$-slice $\{1\}{\times}[1,m{+}1)^{d-1}$
+has its corner stolen and by the induction hypothesis produces $d - 1$
+cuboids. The next full dim$_0$-slice
+$
+  \{2\}{\times}[1,m{+}1)^{d-1}
+$
+cannot merge with the last of those $d - 1$ cuboids because their dim$_1$
+rulers differ, with $[2,m{+}1)$ in the leftover and $[1,m{+}1)$ in the
+full slice. Each further full slice merges with its predecessor, so all
+full slices collapse into
+$[2,m{+}1){\times}[1,m{+}1)^{d-1}$
+which contributes one additional cuboid. The total is $(d-1)+1 = d$.
+
+Including the corner-steal cuboid, the greedy-plus-merge produces $d + 1$ cuboids where the optimum uses $2$, giving ratio $(d+1)/2$. By spacing $m$ independent copies in the leading dimension, the ratio persists for arbitrarily large inputs: $\kappa_{\text{gpm}} = m(d+1)$ versus $\kappa_{\text{opt}} = 2m$.
+
+\subsection{Greedy Plus Combine}
+
+The greedy-plus-merge algorithm can produce a suboptimal decomposition when the greedy scan absorbs a point into a narrow cuboid, preventing that point from participating in a larger cuboid formed later. The \emph{greedy-plus-combine} algorithm keeps the same greedy scan and backward merge sweep, and adds one further local repair.
+
+\paragraph{Combine step.}
+Assume the backward merge sweep has stabilised and at least three cuboids exist. Inspect the last three cuboids $C_{L-2}, C_{L-1}, C_L$. Let
+\[
+  K = \operatorname{bbox}(C_{L-1} \cup C_L)
+\]
+be the smallest cuboid containing $C_{L-1} \cup C_L$, and let
+\[
+  \Delta = K \setminus (C_{L-1} \cup C_L)
+\]
+be the missing points of that cuboid. If $\Delta \subseteq C_{L-2}$ and $R = C_{L-2} \setminus K$ is a cuboid, replace $(C_{L-2}, C_{L-1}, C_L)$ by $(R, K)$. After a successful replacement, restart the backward merge sweep and then test again for a combine. If fewer than three cuboids exist, or if either test fails, no combine is applied.
+
+\paragraph{Why the replacement is valid.}
+The replacement preserves the represented point set because $K$ already contains $C_{L-1} \cup C_L$, and its only additional points are the deficit points $\Delta$, which are taken from $C_{L-2}$. It also preserves strict ascent. The cuboid $R$ retains only points of $C_{L-2}$ that are lexicographically before $\operatorname{glb}(C_{L-1})$, while every point moved into $K$ lies at or after that boundary. $R$ is non-empty whenever the combine fires: if $C_{L-2} \subseteq K$ then $|\Delta| = |C_{L-2} \cap K| = |C_{L-2}|$, so $R = C_{L-2} \setminus K = \emptyset$, and the empty set is not a cuboid, so the combine condition~`$R$ is a cuboid' fails immediately.
+
+\paragraph{Example (continued).}
+On $D=\{(1,1),(2,1),(2,2),(3,1),(3,2)\}$, the greedy-plus-merge produces $C_0=[1,3){\times}[1,2)$, $C_1=[2,3){\times}[2,3)$, $C_2=[3,4){\times}[1,3)$. The combine step inspects all three: $K = \operatorname{bbox}(C_1 \cup C_2) = [2,4){\times}[1,3)$. The deficit is $K \setminus (C_1 \cup C_2) = \{(2,1)\}$, which is contained in $C_0$. The remainder $C_0 \setminus K = [1,2){\times}[1,2)$ is a cuboid. The algorithm replaces the three cuboids by $[1,2){\times}[1,2)$ and $[2,4){\times}[1,3)$, recovering the optimal $\kappa=2$ decomposition (Figure~\ref{figure:non-optimal}, right).
+
+\paragraph{Construction complexity.}
+Each combine attempt costs $O(d)$. Constructing $K$ and computing $|K|$ use only the coordinate bounds of the two cuboids $C_{L-1}$ and $C_L$. Since IPT cuboids are pairwise disjoint, the deficit size is
+\[
+  |\Delta| = |K| - |C_{L-1}| - |C_L|.
+\]
+Therefore $\Delta \subseteq C_{L-2}$ if and only if $C_{L-2} \cap K$ has exactly this size, which is one $O(d)$ cuboid-intersection test:
+\[
+  |C_{L-2} \cap K| = |K| - |C_{L-1}| - |C_L|.
+\]
+The remaining check that $R = C_{L-2} \setminus K$ is a cuboid is again a local test on two cuboid descriptors. A successful combine reduces the cuboid count by at least one, so at most $N-1$ combines occur over the full run. Combined with the greedy and merge costs, the greedy-plus-combine algorithm runs in $O(dN)$.
+
+\paragraph{Optimality.}
+The greedy-plus-combine always produces a decomposition with the minimum number of cuboids.
+Appendix~\ref{proof:gpc-optimality} gives the full proof by strong induction on~$N$ with a secondary induction on~$d$. The key point is that the only obstruction to greedy-plus-merge is the corner-steal pattern from the previous subsection. In that configuration, the last three cuboids have exactly the shape targeted by the combine step: the missing points of $K$ lie in the previous cuboid, and removing them from that previous cuboid leaves another cuboid. The combine therefore reconstructs the first optimal cuboid~$C^*_0$. Once~$C^*_0$ has been recovered, the proof shows that no later merge or combine can modify it, so the remaining instance is smaller and the induction hypothesis applies.
+
+\paragraph{Canonical decomposition.}
+Since the minimum-$\kappa$ decomposition is not always unique (see the non-uniqueness example in~\S\ref{section:decomposition-problem}), it is natural to ask which optimum the greedy-plus-combine selects.  The inductive proof shows that the algorithm maximises $|C_0|$ first, then maximises $|C_1|$ among all optima with that $|C_0|$, and so on.  In other words, the algorithm produces the unique minimum-$\kappa$ decomposition $(C_0, \ldots, C_{\kappa-1})$ whose size sequence $(|C_0|, |C_1|, \ldots, |C_{\kappa-1}|)$ is lexicographically greatest.  We call this the \emph{canonical} optimal decomposition of~$D$.
+
+\subsection{Comparison and Practical Choice}
+
+Table~\ref{table:algorithm-comparison} summarises the three construction algorithms.
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lccc}
+\toprule
+ & Greedy+Merge & Greedy+Combine & Dynamic Programming \\
+\midrule
+Time (sorted input) & $O(dN)$ & $O(dN)$ & $\Theta(dN^2)$, naive $\Theta(dN^3)$ \\
+Optimal $\kappa$? & No & Yes & Yes \\
+Approximation ratio & $\geq (d{+}1)/2$ & $1$ & $1$ \\
+Working memory & ${\leq}\,d$ cuboids & ${\leq}\,d$ cuboids & $N{+}1$ sizes \\
+               & (${\leq}\,3d^2$ scalars) & (${\leq}\,3d^2$ scalars) & \\
+\bottomrule
+\end{tabular}
+\caption{Comparison of the three decomposition construction algorithms.  The greedy-plus-merge reconstructs any single cuboid (Appendix~\ref{proof:one-cuboid-recovery}) but can produce $(d{+}1)/2$ times the optimum due to corner-steals.  The greedy-plus-combine matches the dynamic programming optimum at linear cost by repairing every corner-steal via the combine step (Appendix~\ref{proof:gpc-optimality}).}
+\Description{A comparison table for greedy-plus-merge, greedy-plus-combine, and dynamic programming. It lists time complexity, optimality of the cuboid count, approximation ratio, and working-memory requirements.}
+\label{table:algorithm-comparison}
+\end{table}
+
+The greedy-plus-merge reconstructs any single cuboid in $O(dN)$ time with at most~$d$ intermediate cuboids (Appendix~\ref{proof:one-cuboid-recovery}).  However, the greedy scan can absorb the lexicographically first corner of a subsequent cuboid into a narrow column (the corner-steal) producing at least $(d{+}1)/2$ times the optimum, and no upper bound is currently known.
+
+The greedy-plus-combine augments the merge with a three-cuboid combine step that detects and repairs every such corner-steal.  The formal proof (Appendix~\ref{proof:gpc-optimality}) shows by induction on~$N$ that the algorithm's first output cuboid always equals the first optimal cuboid.  If the greedy steals a corner point, the combine restores the correct cuboid, and a dimension-separation argument guarantees it is never modified again.  The result is an $O(dN)$ algorithm that always achieves the minimum cuboid count.
+
+The dynamic programming algorithm also guarantees the minimum~$\kappa$, but its cost is $\Theta(dN^2)$ (naive: $\Theta(dN^3)$), making it impractical for large inputs.
+
+\section{Design Space and Rationale for the Flat IPT}
+\label{section:design-space}
+
+The Horner scheme solves rank/unrank for a single regular grid.
+When the point set is no longer a single cuboid, two natural strategies arise:
+(i)~compose a cuboid-selection step with the unchanged Horner scheme
+(the flat IPT), or
+(ii)~generalise each Horner divmod step into a directory
+lookup (the recursive IPT).
+Both coincide for $\kappa=1$ but diverge
+in structure, complexity, and practical trade-offs as
+$\kappa$ grows.
+
+\subsection{Horner Scheme}
+
+For a regular $d$-dimensional grid with extents $n_0,\dots,n_{d-1}$ (corresponding to $|R_0|,\ldots,|R_{d-1}|$ in the cuboid notation of Section~\ref{section:representation}), the admissible coordinate tuples are
+\[
+  (c_0,\dots,c_{d-1}) \in [0,n_0) \times \cdots \times [0,n_{d-1}).
+\]
+The classical Horner rank of such a coordinate tuple is
+\[
+  H(c_0,\dots,c_{d-1})
+  = (\cdots (((0 \cdot n_0 + c_0) n_1 + c_1)n_2 + c_2) \cdots ) n_{d-1} + c_{d-1}.
+\]
+Equivalently, using the same recurrence structure as the cuboid $\operatorname{pos}_C$ definition, define the partial ranks
+\[
+  i_0 = 0,
+  \qquad
+  i_{k+1} = i_k \cdot n_k + c_k
+  \quad\text{for } k = 0,\ldots,d{-}1,
+\]
+then $H(c_0,\dots,c_{d-1}) = i_d$.
+
+The inverse mapping, that is, the Horner unrank, reconstructs the coordinates from a flat index $i \in [0,n_0 \cdots n_{d-1})$ by repeated divmod steps. Using the same loop variable as the cuboid $\operatorname{at}_C$ definition, set $q_{d-1} = i$ and for $k=d{-}1,d{-}2,\dots,1$ let
+\[
+  (q_{k-1}, c_k) = \operatorname{divmod}(q_k, n_k).
+\]
+Finally set $c_0 = q_0$.
+Then
+\[
+  H^{-1}(i) = (c_0,\dots,c_{d-1}).
+\]
+
+Classical regular-grid rank/unrank resolves one dimension at a time. Each divmod step selects exactly one slot. The same extends to strided-regular data, where each physical coordinate is first mapped to its ruler position before the mixed-radix mechanism applies.
+
+\subsection{Flat IPT}
+
+The flat IPT is not a structural generalisation of the Horner recurrence. It \emph{composes}
+a cuboid-selection stage with the unchanged Horner scheme:
+\begin{enumerate}[leftmargin=*]
+  \item identify the cuboid that contains the requested global index or point,
+  \item apply the local Horner scheme inside that cuboid.
+\end{enumerate}
+
+For \texttt{at}, a global binary search on cuboid prefix sums identifies the unique cuboid whose index interval contains the queried index. For \texttt{pos}, a global binary search on the lexicographically ordered cuboids identifies the candidate cuboid for the queried point. Once the cuboid is known, the local mapping is exactly the same rank/unrank logic that is already used in regular-grid codes.
+
+This explains why the IPT preserves the (strided-)regular case: with the implemented one-cuboid fast path, the outer search disappears and only the cuboid-local Horner scheme remains. It also shows that the IPT extends rather than replaces existing regular-grid practice.
+
+\subsection{Recursive IPT}
+
+A more explicit recursive generalization is also possible. Instead of resolving irregularity with one global search, one generalizes each Horner divmod step: at dimension $j$, a binary search over admissible ruler intervals selects the next recursive step, and the local position inside that ruler replaces the corresponding divmod digit.
+
+In the (strided-)regular case, each directory contains exactly one interval, so the binary searches are trivial. In the irregular case, the directories express ambiguity and resolve it one dimension at a time.
+
+The attraction is that deep tuple comparisons become scalar binary searches on progressively smaller ranges. The price is more complex metadata whose footprint depends on the directory structure at each level, not just on $\kappa$.
+
+\paragraph{Example.}
+Consider the IPT of Figure~\ref{figure:ipt-example} with $d=2$ and $\kappa=2$.
+The compressed recursive directory structure stores admissible ruler intervals rather than explicit coordinate values (Figure~\ref{figure:per-dim-lookup}).
+At the root level there are two non-terminal directory entries,
+\[
+  ([1,2,9),\,0,\,A)
+  \qquad\text{and}\qquad
+  ([10,1,13),\,20,\,B),
+\]
+where each triple consists of a $\dim_0$ ruler interval, the cumulative point count before that entry, and a child reference.
+The prefix~$20$ in the second entry is the size of the first entry's block, namely $|[1,2,9)|\cdot|[-3,3,12)| = 4\cdot 5 = 20$.
+The two leaf directories are terminal and therefore omit the child reference:
+\[
+  A:([-3,3,12),\,0),
+  \qquad
+  B:([2,2,14),\,0).
+\]
+Under this compressed layout the total directory metadata is
+\[
+  2\cdot(3+1+1) + 2\cdot(3+1) = 18
+\]
+scalars: two root entries with ruler, prefix, and child reference, plus two terminal leaf entries with ruler and prefix.
+By contrast, the flat IPT stores two cuboid records with base, stride,
+and bound for each ruler, plus two prefix sums, for a total of
+$14$~scalars.
+
+To evaluate $\operatorname{pos}(5,3)$ with the recursive variant:
+a scalar binary search in the root directory selects the first entry
+$([1,2,9),0,A)$, because $5\in[1,2,9)$.
+Inside that entry, the local position of~$5$ in the selected ruler is
+$\operatorname{pos}_{[1,2,9)}(5)=2$.
+Since the child directory~$A$ represents $|[-3,3,12)| = 5$ points per
+$\dim_0$ position, the $\dim_0$ contribution is
+$0 + 2\cdot 5 = 10$.
+Following the child reference to~$A$, the terminal directory contributes
+$\operatorname{pos}_{[-3,3,12)}(3)=2$, giving the total index
+$10+2=12$.
+With the flat IPT, a single lexicographic binary search on
+$\operatorname{lub}(C)$ finds
+$(5,3)\le_{\mathrm{lex}}(7,9)$, yielding $j=0$.
+The local Horner mapping gives
+$\operatorname{pos}_{R_0}(5)\cdot|R_1|+\operatorname{pos}_{R_1}(3)
+ =2\cdot 5+2=12$,
+and $r_0+12=12$.
+Both variants yield the same index, but the recursive lookup uses two
+scalar directory lookups where the flat IPT uses one two-dimensional
+lexicographic comparison followed by two ruler-position computations.
+
+\begin{figure}[ht]
+\centering
+\iptPerDimLookup
+\caption{Compressed recursive IPT directories for $\operatorname{pos}(5,3)$
+on the IPT of Figure~\ref{figure:ipt-example}.
+The root stores one interval entry per admissible $\dim_0$ ruler, each with
+its cumulative prefix and child reference. The terminal leaf directories store
+one interval entry per admissible $\dim_1$ ruler together with the local prefix.
+Bold entries trace the lookup path, yielding index~$12$.}
+\Description{A schematic view of the recursive IPT lookup for the point (5,3). A root directory chooses the first-dimension ruler, a leaf directory chooses the second-dimension ruler, and the accumulated prefixes produce the final position 12.}
+\label{figure:per-dim-lookup}
+\end{figure}
+
+\begin{remark}[Membership testing]
+Any robust implementation of \texttt{pos} must report when the input
+point is not contained in~$D$.
+In the recursive variant, non-membership is detected for
+free: if at some level the queried coordinate is contained in none of
+the admissible ruler intervals for the current prefix, the lookup
+terminates immediately.
+In the flat IPT, the global binary search always returns a candidate
+cuboid.
+Non-membership must therefore be detected explicitly by verifying, for
+each ruler of the candidate cuboid, that the corresponding coordinate
+is a member.
+This adds an $O(d)$ post-check that the recursive variant avoids.
+\end{remark}
+
+\subsection{Comparison}
+Recall that the flat IPT stores $\Theta(d\kappa)$ scalars and provides
+$\texttt{at}\in O(d+\log\kappa)$ and
+$\texttt{pos}\in O(d\log\kappa)$.
+The recursive variant replaces the single global search
+with $d$~scalar binary searches, one per dimension level.
+At each level the directory stores the admissible ruler intervals
+for that dimension given the resolved prefix.
+With $\kappa$~cuboids, each directory contains at most $\kappa$~intervals.
+Let $n_k$ denote the directory size at level~$k$ along a lookup path.
+Both \texttt{at} and \texttt{pos} then cost
+$O\!\bigl(\sum_{k=0}^{d-1}\log n_k\bigr)$
+scalar comparisons.
+The trade-off depends on the structure of the data.
+
+\emph{(Strided-)regular ($\kappa=1$).}
+Both variants store $\Theta(d)$ and evaluate \texttt{at} and \texttt{pos}
+in~$O(d)$.
+Every recursive directory contains a single ruler interval,
+so the binary searches are trivial.
+
+\emph{Highly regular ($\kappa\ll N$).}
+The cuboids are large, and ruler intervals compress long arithmetic
+progressions into constant-size descriptors.
+Because each directory level stores at most $\kappa$~ruler intervals,
+the recursive metadata is compact (bounded polynomially
+in~$\kappa$ and~$d$, independently of~$N$), comparable
+to the flat IPT's $\Theta(d\kappa)$.
+For \texttt{pos}, the flat IPT performs $O(\log\kappa)$ lexicographic
+comparisons of worst-case cost $O(d)$ each, giving $O(d\log\kappa)$.
+The recursive variant also costs $O(d\log\kappa)$ in the worst case
+(each of the $d$~directories has up to $\kappa$~entries),
+but uses $O(1)$~scalar comparisons instead of $O(d)$~tuple comparisons.
+When the cuboid projections separate early, then the remaining $d{-}1$ directories
+have size one and the total drops to $O(d+\log\kappa)$.
+Conversely, the flat IPT's lexicographic comparisons can also
+terminate early when the leading dimension already distinguishes
+the cuboids.
+For \texttt{at}, the flat IPT always identifies the cuboid with
+a single $O(\log\kappa)$ scalar search on prefix sums,
+then extracts coordinates with $O(d)$~local divmod steps,
+giving $O(d+\log\kappa)$ independently of the dimensional structure.
+The recursive variant identifies the cuboid incrementally
+across levels:
+if an early dimension already resolves the cuboid identity,
+the remaining directories have size one and the total is
+$O(d+\log\kappa)$.
+If, however, cuboids are not distinguishable until the last
+dimension, the identification cost is spread across all levels,
+giving up to $O(d\log\kappa)$ in the worst case.
+
+\emph{Highly irregular ($\kappa\approx N$).}
+Each cuboid degenerates to one or a few points, so rulers are short
+and the compression advantage vanishes.
+Both variants store $\Theta(dN)$.
+The recursive top-level directory may list up to~$N$ entries, but deeper directories narrow quickly
+(each point resides in exactly one cuboid),
+so $\sum\log n_k$ remains $O(d\log N)$ in the worst case, which is the
+same as the flat IPT's \texttt{pos}.
+For \texttt{at}, the flat IPT retains a guaranteed $O(d+\log N)$,
+while the recursive variant ranges from $O(d+\log N)$
+(early separation) to $O(d\log N)$ (late separation).
+Neither variant has a clear advantage for \texttt{pos}.
+For \texttt{at}, the flat IPT's guaranteed bound is tighter.
+
+\paragraph{Intersection and selection.}
+Ruler intersection ($O(1)$) and cuboid intersection ($O(d)$) are
+representation-independent: they operate on the mathematical objects,
+not on how the IPT stores them, so both variants use the same algorithm
+at the same cost.
+The IPT-cuboid intersection and selection operation
+differ is where the two representations genuinely
+differ.
+The flat IPT performs a single binary search on $\operatorname{lub}(C)$
+to find the first candidate cuboid, then scans forward testing each of
+$t$~candidates via an~$O(d)$ cuboid intersection, for a total of
+$O(d\log\kappa+dt)$.
+The recursive variant naturally supports a \emph{recursive pruning
+traversal}: at dimension level~$k$, binary-search the directory for
+entries compatible with the query ruler in that dimension, then recurse
+into each matching subdirectory.
+Let $m_k$ denote the number of subdirectory nodes visited at level~$k$
+($m_0=1$). At each node a binary search on a directory of size
+at most~$\kappa$ costs $O(\log\kappa)$, and the matches become nodes
+at the next level.
+The total cost is
+$O\!\bigl(\log\kappa\cdot\sum_{k=0}^{d-1}m_k\bigr)$.
+When an early dimension already prunes most branches,
+$m_k=1$ for all subsequent levels and the bound collapses
+to~$O(d\log\kappa)$.
+When no dimension prunes effectively, $m_k$ can reach~$\kappa$
+at every level, giving up to $O(d\kappa\log\kappa)$,
+which is a $\log\kappa$ factor above the flat IPT's
+$O(d\log\kappa+dt)$ (with $t\le\kappa$).
+The flat IPT's guarantee is tighter and more predictable.
+The recursive variant's cost depends on how the query
+decomposes across dimensions.
+
+\medskip
+\noindent
+\begin{tabular}{@{}l@{\;\;}l@{\;\;}l@{\;\;}l@{}}
+\toprule
+& \textbf{(Strided-)regular} ($\kappa=1$)
+& \textbf{Highly regular} ($\kappa\ll N$)
+& \textbf{Highly irregular} ($\kappa\approx N$) \\
+\midrule
+\multicolumn{4}{@{}l}{\emph{Storage}} \\
+\quad Flat IPT        & $\Theta(d)$ & $\Theta(d\kappa)$ & $\Theta(dN)$ \\
+\quad Recursive IPT   & $\Theta(d)$ & $O(d\kappa)$      & $\Theta(dN)$ \\[4pt]
+\multicolumn{4}{@{}l}{\emph{\texttt{at}}} \\
+\quad Flat IPT        & $O(d)$ & $O(d+\log\kappa)$  & $O(d+\log N)$ \\
+\quad Recursive IPT   & $O(d)$ & $O(d+\log\kappa)$--$O(d\log\kappa)$ & $O(d+\log N)$--$O(d\log N)$ \\[4pt]
+\multicolumn{4}{@{}l}{\emph{\texttt{pos}}} \\
+\quad Flat IPT        & $O(d)$ & $O(d\log\kappa)$\rlap{${}^{\dagger}$}  & $O(d\log N)$\rlap{${}^{\dagger}$} \\
+\quad Recursive IPT   & $O(d)$ & $O(d\log\kappa)$\rlap{${}^{\ddagger}$} & $O(d\log N)$\rlap{${}^{\ddagger}$} \\[4pt]
+\multicolumn{4}{@{}l}{\emph{Selection} ($t$~candidates, $m_k$~nodes visited at level~$k$)} \\
+\quad Flat IPT        & $O(d)$ & $O(d\log\kappa+dt)$  & $O(d\log N+dt)$ \\
+\quad Recursive IPT   & $O(d)$ & $O(\log\kappa{\cdot}\textstyle\sum m_k)$ & $O(\log N{\cdot}\textstyle\sum m_k)$ \\
+\bottomrule
+\multicolumn{4}{@{}l}{\footnotesize ${}^{\dagger}$\,tuple comparisons;\;
+  ${}^{\ddagger}$\,scalar comparisons}
+\end{tabular}
+
+\subsection{Design Choice}
+
+The flat IPT studied in this paper is the systems-oriented member of
+the design space. The recursive variant can match or occasionally improve on
+the flat IPT when the data separates early, but its bounds depend on
+how the cuboids project across dimensions. By contrast, the flat IPT
+provides data-independent worst-case guarantees and a contiguous array
+of fixed-size cuboid records that is easy to serialize and cache.
+
+Within the cases considered here, the clearest niche for the recursive
+variant is selection queries in which many cuboids share the same
+leading-dimension projections and separate only in later dimensions.
+In that regime, the flat IPT pays $O(d)$ for each of the $t$ candidate
+cuboids, giving $O(d\log\kappa+dt)$ overall, whereas the recursive
+traversal keeps the shared prefix collapsed and pays
+$O\!\bigl(\log\kappa\cdot\sum m_k\bigr)$ on the visited directory
+nodes instead. The potential gain is therefore in the candidate
+processing term, and it appears only when $\sum m_k$ is much smaller
+than $dt$. Even there, the benefit is narrow because it is paired with
+a weaker \texttt{at} guarantee and pointer-chasing access.
+
+That the simpler two-stage composition (binary search plus Horner
+scheme) yields tighter and more predictable bounds than the
+structurally deeper recursive generalisation is the key insight from the design-space analysis.
+
+\section{Experimental Methodology}
+\label{section:methodology}
+
+\subsection{Implementation}
+\label{section:implementation}
+
+All experiments use a self-contained C++23 benchmark
+implementation~\cite{RahnIPT2026} with no external library dependencies.
+
+\paragraph{Data layout.}
+Coordinates are \texttt{std::int64\_t}, and flat indices are
+\texttt{std::uint64\_t}.
+A $d$-dimensional point is a \texttt{std::array} of $d$ coordinates.
+A ruler $[b,s,e)$ stores three coordinates.
+A cuboid is a \texttt{std::array} of $d$ rulers.
+An \emph{entry} pairs a cuboid with the cumulative size of all preceding
+entries.
+The IPT is a single \texttt{std::vector} of entries in strict
+lexicographic order, and all orderings use compiler-generated
+\texttt{operator<=>}.
+
+\paragraph{Construction.}
+Both the greedy-plus-merge and greedy-plus-combine algorithms
+(Section~\ref{section:construction}) are implemented.
+Points are consumed one at a time in lexicographic order. The entry
+vector is maintained incrementally with recursive merging and, in the
+combine variant, a subsequent three-entry combine attempt.
+
+\paragraph{Query operations.}
+\texttt{at} performs \texttt{std::upper\_bound} on the entry vector by
+\texttt{end()} to locate the containing entry, then applies the cuboid's
+mixed-radix decoding.
+\texttt{pos} performs \texttt{std::lower\_bound} by \texttt{lub()} to find
+the first candidate entry, then computes the Horner-style index and adds
+the entry's stored cumulative prefix.
+Intersection is exercised inside the dedicated selection and
+restriction benchmarks of
+Section~\ref{section:results-selection}. Those measurements capture not
+only the per-fragment translation work also used by \texttt{at} and
+\texttt{pos}, but also the candidate-enumeration term of the selection
+loop and the from-range rebuild used for restriction.
+
+\paragraph{Measured implementations.}
+The benchmark covers ten exact implementations
+(Table~\ref{table:implementations}). The two IPT builders are
+greedy-plus-merge and greedy-plus-combine. \texttt{Regular-IPT} builds
+the single-cuboid IPT for fully regular data. \texttt{Grid} applies
+pure mixed-radix rank/unrank to a full regular grid. \texttt{SortedPoints}
+stores the explicit lexicographically sorted point array. \texttt{DenseBitset}
+and \texttt{BlockBitmap} represent the bounding grid as dense occupancy
+bitmaps. \texttt{LexRun} stores maximal lexicographic runs in the fastest
+dimension. \texttt{RowCSR-k1} and \texttt{RowCSR-k2} are compressed-sparse-row
+layouts with one and two row dimensions, respectively.
+Together these baselines span explicit-point, dense-occupancy,
+run-length, row-compressed, and regular-grid designs. They do not
+exhaust every practical competitor, especially tree-based or
+space-filling-curve variants, but they cover a broad set of exact flat
+and sparse layouts that isolate the IPT's trade-offs against nearby
+representations.
+
+\begin{table}[ht]
+\centering
+\caption{Measured implementations.}
+\Description{A table listing the ten benchmarked implementations, their representation, where they apply, and their role in the study.}
+\label{table:implementations}
+\small
+\begin{tabular}{p{2.8cm}p{3.2cm}p{2.3cm}p{4.0cm}}
+\toprule
+Implementation & Representation & Scope & Role \\
+\midrule
+Greedy-plus-merge
+  & Full IPT via incremental merge
+  & all workloads
+  & practical IPT default in the detailed plots \\
+Greedy-plus-combine
+  & Full IPT with additional combine repair
+  & all workloads
+  & optimal-construction IPT variant \\
+Regular-IPT
+  & single-cuboid IPT
+  & regular grids
+  & ideal regular-case IPT baseline \\
+SortedPoints
+  & sorted explicit point array
+  & all workloads
+  & general exact baseline \\
+DenseBitset
+  & dense occupancy bitset on the bounding grid
+  & smaller structured scenarios
+  & dense-grid occupancy baseline \\
+BlockBitmap
+  & tiled 64-bit occupancy bitmap
+  & smaller structured scenarios
+  & cache-local occupancy baseline \\
+LexRun
+  & run-length encoding in the fastest dimension
+  & all core workloads
+  & one-axis compression baseline \\
+RowCSR-k1
+  & CSR with one row dimension
+  & all core workloads
+  & row-oriented sparse baseline \\
+RowCSR-k2
+  & CSR with two row dimensions
+  & all core workloads
+  & deeper row-oriented sparse baseline \\
+Grid
+  & pure Horner rank/unrank on the full grid
+  & regular grids
+  & ideal dense-grid baseline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Differences from the industrial implementation.}
+The industrial implementation shares the same algorithms but uses
+pre-allocated or memory-mapped storage (at most one allocation), targets
+C++14, and reports errors via an \texttt{expected}-style return type.
+The benchmark artifact instead uses throwing query methods, targets
+C++23, uses \texttt{std::vector} with doubling growth, and exposes the
+selection pipeline needed for the
+Section~\ref{section:results-selection} measurements: \texttt{IPT}
+provides \texttt{select}, and \texttt{restrict} is evaluated by feeding
+that view into the \texttt{std::from\_range} constructor. These
+differences change the surrounding API and storage strategy, but not the
+ordered-entry search and cuboid-local translation kernels that dominate
+the measured hot paths. No exception is thrown on any measured hot path.
+
+The benchmark driver evaluates the cache-dependent IPT implementations
+(greedy-plus-merge, greedy-plus-combine, and Regular-IPT) under all
+16 cache configurations.
+The cache-independent baselines (SortedPoints, LexRun, RowCSR-k1,
+RowCSR-k2, and Grid) are executed once per platform, because their data
+layout does not depend on IPT cache flags.
+The two dense occupancy baselines (DenseBitset and BlockBitmap) are
+restricted to the seven smaller structured scenarios because their cost
+scales with the full bounding-grid volume rather than with the number of
+occupied points.
+
+\subsection{Benchmark Setup}
+\label{section:setup}
+
+The benchmark is compiled with
+\texttt{-std=c++23 -O3 -DNDEBUG} using the operating-system-provided
+compiler on each platform.
+Table~\ref{table:platforms} lists the 20 platform/compiler combinations,
+grouped into ten hardware/OS rows.
+
+\begin{table}[ht]
+\centering
+\caption{Benchmark platforms.}
+\Description{A table listing ten hardware and operating-system rows that together yield twenty benchmark platform and compiler combinations. Each row includes the processor model, operating system, kernel, and the available GCC and Clang versions.}
+\label{table:platforms}
+\begin{tabular}{lllll}
+\toprule
+Processor & OS & Kernel & GCC & Clang \\
+\midrule
+AMD EPYC 9454
+  & Rocky 10.1 & 6.12
+  & 14.3.1 & 20.1.8 \\
+AMD EPYC 9454
+  & Rocky 9.7 & 5.14
+  & 14.2.1 & 20.1.8 \\
+AMD EPYC 9454
+  & Rocky 8.10 & 4.18
+  & 14.2.1 & 20.1.8 \\
+AMD EPYC 7543
+  & Rocky 10.1 & 6.12
+  & 14.3.1 & 20.1.8 \\
+AMD EPYC 7543
+  & Rocky 9.7 & 5.14
+  & 14.2.1 & 20.1.8 \\
+AMD EPYC 7543
+  & Rocky 8.10 & 4.18
+  & 14.2.1 & 20.1.8 \\
+Intel Xeon Gold 6442Y
+  & Rocky 9.7 & 5.14
+  & 14.2.1 & 20.1.8 \\
+Intel Xeon Gold 6240R
+  & Rocky 9.7 & 5.14
+  & 14.2.1 & 20.1.8 \\
+Intel Xeon Gold 6348
+  & RHEL 9.7 & 5.14
+  & 15.2.0 & 20.1.8 \\
+Intel Core i7-1370P
+  & Rocky 9.7 & 7.0
+  & 14.2.1 & 20.1.8 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The detailed per-scenario plots use the AMD EPYC~9454 on Rocky~10.1 with
+GCC~14.3.1 as the reference platform.
+The cache-selection plot instead aggregates all 20 platform/compiler
+combinations, because that selection argument is meant to be
+cross-platform.
+
+\subsection{Workloads}
+\label{section:workloads}
+
+Two workload families are used, totaling 61 workload shapes.
+\emph{Grid scenarios:}
+four 3D grids ($10{\times}10{\times}10$, $100{\times}10{\times}10$,
+$100{\times}100{\times}10$, $100{\times}100{\times}100$) are each tested
+in 13 occupancy patterns: the fully regular case and 12 random-subset
+densities (1, 2, 5, 10, 25, 50, 75, 90, 95, 98, 99, 100\,\% of the grid
+points).
+This yields 52 regular/random workload shapes.
+Each random case is repeated over 30 seeds, and points are sampled
+uniformly without replacement.
+\emph{Multiple-survey scenarios:}
+nine deterministic, structured layouts model survey unions with overlapping or touching
+rectangular sub-surveys, each with its own stride.
+This family is motivated by the common structure of real seismic
+acquisitions: 5D seismic data (inline, crossline, offset, azimuth, time)
+typically decomposes into a (irregular) 2D collection of 3D
+sub-surveys, each covering a contiguous patch of the inline--crossline
+plane with its own sampling geometry.
+They are synthetic but practically motivated stress cases rather than
+direct captures from production surveys.
+The first six scenarios are effectively 2D (singleton third dimension),
+whereas the last three are 3D block arrangements.
+After deduplication they contain between 71\,100 and 9\,264\,024 unique
+points.
+
+\begin{table}[ht]
+\centering
+\caption{Structured multiple-survey scenarios.}
+\Description{A table listing the nine structured multiple-survey scenarios, including their short label, number of sub-surveys, effective dimension, unique point count after deduplication, and a short description of the geometric pattern.}
+\label{table:structured-scenarios}
+\small
+\begin{tabular}{lrrrp{7cm}}
+\toprule
+Label & Surveys & Dim. & Points & Pattern \\
+\midrule
+2-L
+  & 2 & 2D & 71\,100
+  & two orthogonal sub-surveys forming an L-shape \\
+3-steps
+  & 3 & 2D & 192\,200
+  & three staggered blocks with stepped offsets \\
+4-overlap
+  & 4 & 2D & 582\,208
+  & four partially overlapping survey blocks \\
+5-mixed
+  & 5 & 2D & 869\,476
+  & mixed block sizes and mixed strides \\
+6-bands
+  & 6 & 2D & 948\,282
+  & six band-like strips with mild overlap \\
+7-large
+  & 7 & 2D & 1\,308\,196
+  & seven larger blocks with one central overlap region \\
+12-3D
+  & 12 & 3D & 87\,880
+  & $3\times4$ 3D block layout \\
+16-3D
+  & 16 & 3D & 964\,500
+  & $4\times4$ 3D block layout \\
+36-3D
+  & 36 & 3D & 9\,264\,024
+  & $6\times6$ 3D block layout \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Metrics}
+\label{section:metrics}
+
+For each scenario, configuration, and platform the benchmark records:
+construction time (ns/point), structure footprint (bytes), cuboid count
+($\kappa$ for IPTs), and four query timings.
+The \texttt{pos\_random} and \texttt{at\_random} measurements use
+$\min(10^3, n)$ uniformly sampled points or indices.
+The \texttt{pos\_all} and \texttt{at\_all} measurements use evenly spaced
+samples over the full point or index range, capped at $10^5$ queries for
+the standard suite and at $10^4$ for the dense occupancy baselines on the
+heavy structured cases.
+Each reported per-operation timing is the wall-clock duration of a tight
+loop over the entire sample, divided by the sample size; this amortises
+the cold-cache and branch-predictor cost of the first iterations into the
+steady-state measurement, and the loop itself acts as an implicit warm-up
+of the i-cache and predictor state.
+For samples below 100 operations--where this implicit warm-up is
+insufficient--an explicit warm-up pass over the same sample precedes the
+timed pass.
+Returned values are consumed via XOR into a sink variable to prevent
+dead-code elimination.
+Each reported (scenario, configuration, platform) cell is run with 30
+independent seeds. For the grid scenarios these seeds govern both the
+random point-subset selection and the query sample; for the deterministic
+multiple-survey scenarios the underlying point geometry is fixed and the
+seeds govern only the random query sampling.
+The plots in Section~\ref{section:results} report the arithmetic (or
+geometric, where indicated) mean across seeds, with error bars or
+shaded bands giving the 10th and 90th percentiles of the underlying
+sample distribution to expose the dispersion that scheduler jitter,
+allocator placement, and sample-set composition contribute to each
+measurement.
+We do not pin threads, force NUMA placement, or configure huge pages.
+The measurements therefore target robust end-to-end throughput
+comparisons under ordinary server conditions rather than cycle-accurate
+microarchitectural microbenchmarks.
+
+\paragraph{Cache configurations.}
+The implementation exposes four boolean compile-time flags (\texttt{c},
+\texttt{r}, \texttt{e}, \texttt{l}) that each control whether
+a derived quantity (such as a ruler size, a cuboid size, or an entry's end
+index or bounding point) is cached as an additional stored field, yielding
+$2^4 = 16$ possible configurations.
+
+\subsection{Configuration Selection}
+\label{section:selection}
+
+\paragraph{Construction algorithm.}
+On every one of the 61 workload shapes the two construction algorithms
+produce identical IPTs (same $\kappa$, same footprint, same entries),
+and the construction time agrees within a ${\sim}1.1\times$ band in
+either direction across all 20 platform/compiler combinations.
+In other words, on non-artificial inputs greedy-plus-merge and
+greedy-plus-combine are interchangeable both in result and in
+performance: the L-shape rewrite that distinguishes combine never
+fires, so it reduces to merge plus a small per-\texttt{add} predicate
+check whose remaining wall-clock effect (a few percent in either
+direction, with a clean GCC-vs-Clang split) is dominated by codegen
+rather than by algorithmic work.
+The two algorithms only diverge on the crafted corner-steal family
+from Section~\ref{section:construction}, where combine attains the
+optimum and merge realises the proven $(d+1)/2$ gap.
+On the measured workload suite, combine therefore serves mainly as an
+optimality guarantee rather than as a source of measurable throughput
+or compression gains.
+We therefore use greedy-plus-merge as the simpler default for the
+detailed figures below.
+Greedy-plus-combine remains important as the optimal-construction variant
+proved in Section~\ref{section:construction} and is included in the
+artifact and benchmark output. The benchmark binary itself, when
+compiled without \texttt{NDEBUG} (i.e.\ as exercised by
+\texttt{make verify}), instantiates the crafted corner-steal family
+from Section~\ref{section:construction} at startup and verifies that
+\texttt{GreedyPlusCombine} recovers the optimum while
+\texttt{GreedyPlusMerge} realizes the proven $(d+1)/2$ gap on those
+inputs.
+
+\paragraph{Cache configuration.}
+We benchmarked all 16 configurations across every platform and scenario.
+The entry-end cache (\texttt{e}~flag) remains the dominant
+\texttt{at} lever: the cheapest useful variant, \texttt{c0r0e1l0},
+reduces geometric-mean \texttt{at} time to $0.485\times$ of the uncached
+baseline at only $1.10\times$ memory.
+The ruler-size cache (\texttt{r}~flag) is the dominant \texttt{pos}
+lever, and the least-upper-bound cache (\texttt{l}~flag), which was
+absent from the previous shortlist, contributes additional \texttt{pos}
+improvement.
+With both \texttt{r} and \texttt{l} enabled, \texttt{pos} drops to about
+$0.91\times$ of the uncached baseline, while \texttt{at} stays near
+$0.43\times$.
+For a query-only objective, \texttt{c0r1e1l1} is therefore the best
+frontier point, but its metadata grows to $1.70\times$ of
+\texttt{c0r0e0l0}.
+We instead select \texttt{c0r1e1l0} as the default because it keeps the
+overhead within a $40\%$ memory budget while retaining most of the query
+benefit: relative to \texttt{c0r0e0l0} it yields $0.965\times$
+\texttt{pos}, $0.428\times$ \texttt{at}, $1.149\times$ construction
+time, and $1.40\times$ metadata.
+This makes \texttt{c0r1e1l0} the better paper default when memory is a
+first-class constraint rather than a secondary concern.
+Particular workloads may still prefer other frontier points, for
+example \texttt{c0r1e1l1} on query-heavy deployments with more memory
+headroom or \texttt{c0r0e1l0} when minimizing metadata dominates.
+No small fixed subset adequately captures the complete trade-off
+surface, so we plot all 16 configurations in the selection figure and
+use only the selected default in the detailed scenario figures.
+Figure~\ref{figure:at-cache} summarises the effect.
+
+\begin{figure}[H]
+\centering
+\input{generated/at-cache-effect.tex}
+\caption{Top: geometric-mean construction, \texttt{pos}, and \texttt{at}
+  ratios relative to \texttt{c0r0e0l0}. Bottom: memory
+  ratio for the same 16 cache configurations, ordered by increasing
+  memory footprint. The paper default \texttt{c0r1e1l0} and the
+  query-optimised frontier point \texttt{c0r1e1l1} are shown in bold on
+  the x-axis. Top-panel error bars span the 10th to 90th percentile of
+  the per-(platform, scenario, seed, grid) ratio distribution.}
+\Description{A two-panel cache-configuration summary. The top panel shows grouped bars for construction time, pos time, and at time ratios relative to c0r0e0l0 across all sixteen cache configurations. The bottom panel shows the corresponding memory ratios, with the configurations ordered from lower to higher memory cost. The labels for c0r1e1l0 and c0r1e1l1 are bold to highlight the recommended default and the query-optimized frontier point.}
+\label{figure:at-cache}
+\end{figure}
+
+The query-side cache rankings are stable across the 20 platform/compiler
+combinations: the median Spearman correlation of the 16-configuration
+ranking is $\rho = 0.85$ for \texttt{pos} and $\rho = 0.86$ for
+\texttt{at}, with minima $0.35$ and $0.54$.
+Construction ranks are more platform-sensitive (median $\rho = 0.50$,
+minimum $-0.39$), so the detailed construction numbers below are tied to
+the reference platform rather than interpreted as a universal platform
+ordering.
+We use AMD EPYC~9454 (Rocky~10.1 / GCC~14.3.1) as that reference.
+
+\section{Experimental Results}
+\label{section:results}
+
+\subsection{Construction Performance}
+\label{section:results-construct}
+
+On the EPYC~9454 reference platform, greedy-plus-merge construction
+reaches $42.2{-}45.8$\,Mpoint/s on regular grids.
+On the structured multiple-survey scenarios it achieves
+$36.5{-}45.8$\,Mpoint/s, again in a comparatively narrow band despite the
+varying block layouts.
+\texttt{SortedPoints} construction is essentially a memory copy
+and reaches up to ${\sim}\!660$\,Mpoint/s on the regular grids and
+$90{-}330$\,Mpoint/s on the structured scenarios, so the IPT is
+${\sim}3.8\times$ more expensive to build on the structured workloads
+(geometric mean).
+The cost is dominated by cuboid discovery and merging.
+At the geometric-mean rates on the structured scenarios
+(${\sim}40$\,Mpoint/s construction, ${\sim}10$\,Mpos/s \texttt{pos}),
+the $3.8\times$ build overhead amounts to an extra ${\sim}18$\,ns per
+input point; the $2.33\times$ \texttt{pos} speedup over
+\texttt{SortedPoints} saves ${\sim}125$\,ns per query.
+The IPT therefore recovers its build cost after approximately $N/7$
+\texttt{pos} queries, where $N$ is the number of input points.
+Any workload that issues at least one query per seven stored points (like repeated-timestep simulations with fixed geometry do)
+amortises construction within the first pass.
+Figure~\ref{figure:construct-multi-survey} shows the per-point
+construction time on the nine structured multiple-survey scenarios.
+Figure~\ref{figure:construct-vs-density} shows construction time
+as a function of density for the four grid sizes.
+
+\begin{figure}[H]
+\centering
+\input{generated/construct-multiple-survey.tex}
+\caption{Construction time per point on the multiple-survey
+  scenarios (\texttt{c0r1e1l0}, EPYC~9454 reference platform;
+  error bars span the 10th-90th percentile across 30 seeds).}
+\Description{A bar chart comparing IPT and SortedPoints construction time per point across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across 30 seeds.}
+\label{figure:construct-multi-survey}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\input{generated/construct-vs-density.tex}
+\caption{IPT construction time per point vs.\ point-set density
+  for four grid sizes (30-seed mean, \texttt{c0r1e1l0},
+  EPYC~9454 platform; error bars span the 10th-90th percentile across
+  the 30 seeds).}
+\Description{A line plot of IPT construction time per point versus point-set density for four regular grid sizes, with 10th-to-90th-percentile error bars across 30 seeds. The curves show that construction cost decreases and then flattens as density approaches one hundred percent.}
+\label{figure:construct-vs-density}
+\end{figure}
+
+\subsection{Compression and Memory}
+\label{section:results-kappa}
+
+On fully regular grids the IPT produces a single cuboid ($\kappa = 1$)
+regardless of grid size.
+For random subsets of the $100{\times}100{\times}100$ grid, $\kappa$ is concave in the
+point-set density: it rises from ${\sim}7\,100$ at $1\%$ to a peak of
+${\sim}195\,000$ at $50\%$ and then declines back to~1 at $100\%$
+(30-seed mean, coefficient of variation $< 0.2\%$).
+The multiple-survey scenarios yield cuboid counts
+ranging from $\sim\!2\,100$ to $\sim\!137\,000$.
+The largest count still occurs in the 7-large 2D layout, whereas the
+16-block and 36-block 3D layouts compress much better
+($\sim\!4\,900$ and $\sim\!3\,000$ cuboids) because their repeated local
+block structure exposes long regular runs despite the higher number of
+sub-surveys.
+
+Because the IPT stores per-cuboid metadata rather than per-point
+data, memory is directly proportional to~$\kappa$.
+With $\kappa = 1$ the IPT stores a single entry regardless of the
+number of points.
+On the application-relevant multiple-survey scenarios the
+memory ratio (IPT\,/\,SortedPoints) is $0.138$
+for \texttt{c0r1e1l0} and $0.105$ for the minimal
+configuration \texttt{c0r0e0l0},
+i.e.\ the selected default uses about $14\%$ of the sorted-points
+footprint on those structured layouts.
+For the sparsest random subsets ($1\%$) the high $\kappa$ can
+push the IPT to ${\sim}\!4.0\times$ the sorted-points size;
+the minimal-footprint \texttt{c0r0e0l0} reduces that worst case
+substantially.
+
+\begin{figure}[H]
+\centering
+\input{generated/kappa-vs-density.tex}
+\caption{Normalized cuboid count $\kappa/N$ as a function of
+  point-set density for four grid sizes (30-seed mean, EPYC~9454
+  platform; error bars span the 10th-90th percentile across the 30
+  seeds).}
+\Description{A line plot of the normalized cuboid count kappa over N versus density for four grid sizes, with 10th-to-90th-percentile error bars across 30 seeds. The curves peak at intermediate densities and drop toward zero as the data becomes fully regular.}
+\label{figure:kappa}
+\end{figure}
+
+\subsection{Query Performance: \texttt{pos}}
+\label{section:results-pos}
+
+\emph{IPT vs.\ mixed-radix (regular grids).}
+Even without the \texttt{l}-cache, the single-entry binary search on
+regular grids remains effectively free at the measured sizes.
+On regular grids ($\kappa = 1$) the IPT matches pure mixed-radix
+rank/unrank closely: the geometric-mean \texttt{pos} time is only
+$0.99\times$ that of the \texttt{Grid} baseline and the geometric-mean
+\texttt{at} time is $1.00\times$.
+The tighter memory budget therefore does not materially degrade the
+regular-grid case.
+
+\emph{IPT vs.\ sorted-points.}
+On regular grids the sampled \texttt{pos\_random} benchmark shows the IPT's
+\texttt{pos} to be $9.3{-}40.7\times$ faster than \texttt{SortedPoints}
+(which performs a full \texttt{lower\_bound} over all $n$ points).
+On the regular grids the IPT reaches $169{-}180$\,Mpos/s.
+On the multiple-survey scenarios the advantage is
+${\sim}2.33\times$ (geometric mean), with the IPT reaching
+$5.0{-}22.6$\,Mpos/s.
+As random-subset density drops, $\kappa$ rises and the IPT's
+advantage shrinks: at $1\%$ and $50\%$ density the IPT is still
+slower on the $100{\times}100{\times}100$ grid (ratios $1.22$ and
+$1.45$), the crossover occurs between $75\%$ and $90\%$ density
+(ratios $1.17$ and $0.86$), and by $99\%$ density the IPT is already
+about $1.87\times$ faster owing to the drop in~$\kappa$.
+The exhaustive \texttt{pos\_all} timings show the same ranking and even
+stronger separation on the structured scenarios, where the IPT is
+more than $2\times$ faster than \texttt{SortedPoints} in geometric mean.
+Figure~\ref{figure:pos-multi-survey} shows the absolute \texttt{pos}
+performance on the nine structured multiple-survey scenarios.
+Figure~\ref{figure:pos-ratio} shows the full density sweep.
+
+Among the additional structured baselines, \texttt{RowCSR-k1} is the
+only cache-independent layout that improves \texttt{at} over the IPT,
+but it still loses on \texttt{pos} and uses substantially more memory.
+\texttt{RowCSR-k2} and \texttt{LexRun} also remain slower than the IPT
+on both queries across the structured scenarios.
+The dense occupancy baselines are only tractable on the seven smaller
+structured scenarios, and there they remain two to three orders of
+magnitude slower on both queries despite bit-level storage.
+
+\begin{figure}[H]
+\centering
+\input{generated/pos-multiple-survey.tex}
+\caption{Absolute \texttt{pos} performance on the multiple-survey
+  scenarios (\texttt{c0r1e1l0}, EPYC~9454 reference platform;
+  error bars span the 10th-90th percentile across 30 seeds).}
+\Description{A bar chart comparing absolute pos query performance for IPT and SortedPoints across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across 30 seeds.}
+\label{figure:pos-multi-survey}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\input{generated/pos-ratio-vs-density.tex}
+\caption{\texttt{pos} time ratio (IPT / SortedPoints) vs.\ density
+  (\texttt{c0r1e1l0}, EPYC~9454 platform, 30-seed geometric mean;
+  error bars span the 10th-90th percentile across the 30 seeds).}
+\Description{A line plot of the pos time ratio between IPT and SortedPoints versus point-set density for four grid sizes, with 10th-to-90th-percentile error bars across 30 seeds. The ratio is above one at low and medium densities and drops well below one near full regularity.}
+\label{figure:pos-ratio}
+\end{figure}
+
+\subsection{Query Performance: \texttt{at}}
+\label{section:results-at}
+
+\texttt{SortedPoints} answers \texttt{at} by direct array indexing
+($O(1)$). The IPT requires a binary search plus Horner unrank.
+On regular grids the IPT is $1.05{-}8.69\times$ slower than
+\texttt{SortedPoints}, but it stays within ${\sim}1\%$ of the ideal
+regular-grid baseline because the selected caches leave the one-entry
+search near-trivial.
+On random subsets the gap widens to roughly $25{-}45\times$ because $\kappa$
+determines the binary-search depth.
+This is the expected cost of trading per-point storage for
+per-cuboid metadata.
+Figure~\ref{figure:at-multi-survey} shows the absolute \texttt{at}
+performance on the nine structured multiple-survey scenarios.
+On those structured scenarios the IPT reaches $8.1{-}28.3$\,M\texttt{at}/s
+and is $18.7\times$ slower than \texttt{SortedPoints} in geometric mean.
+The exhaustive \texttt{at\_all} timings show the same ranking but a
+smaller gap, because the evenly spaced index pattern has
+better locality for both layouts.
+
+\begin{figure}[H]
+\centering
+\input{generated/at-multiple-survey.tex}
+\caption{Absolute \texttt{at} performance on the multiple-survey
+  scenarios (\texttt{c0r1e1l0}, EPYC~9454 reference platform;
+  error bars span the 10th-90th percentile across 30 seeds).}
+\Description{A bar chart comparing absolute at query performance for IPT and SortedPoints across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across 30 seeds.}
+\label{figure:at-multi-survey}
+\end{figure}
+
+\subsection{Selection and Restriction}
+\label{section:results-selection}
+
+The cuboid algebra of Section~\ref{section:operations-restriction}
+gives the IPT a closed-form selection operator
+$\textsc{select}: Q \mapsto \{\, C_h \cap Q : C_h \cap Q \neq \emptyset
+\,\}$
+and, by re-feeding its result into the from-range constructor, a
+restriction operator $\textsc{restrict}(Q) = \mathrm{IPT}(\textsc{select}(Q))$.
+The expected cost of one full enumeration is
+\[
+  O(\log\kappa + d\,t + d\,r),
+\]
+where $t$ is the number of cuboid candidates touched by the binary-bound
+search and $r$ is the number of non-empty intersection cuboids
+returned. The $\log\kappa$ term is the one-shot binary search; $d\,t$ is
+the per-candidate intersection cost; $d\,r$ is the per-result yield
+cost.
+
+To validate this decomposition we instrumented the same seven baselines
+used for \texttt{at}/\texttt{pos} (\textsc{Grid}, \textsc{SortedPoints},
+\textsc{DenseBitset}, \textsc{BlockBitmap}, \textsc{LexRun},
+\textsc{RowCSR-k1}, \textsc{RowCSR-k2}) and the three IPT
+configurations (\textsc{Regular}, \textsc{GreedyPlusCombine},
+\textsc{GreedyPlusMerge}) with a uniform \texttt{select} method that
+emits a lazy stream of \texttt{Cuboid<D>} fragments
+covering exactly the points in the query window. The point-level
+baselines emit one singleton cuboid per matching point; \textsc{LexRun}
+emits one cuboid per surviving lex-run; \textsc{Grid} and the IPT
+variants emit at most one fragment per intrinsic cuboid. The benchmark
+binary, when compiled without \texttt{NDEBUG} (i.e.\ as exercised by
+\texttt{make verify}), additionally runs $200$ random axis-aligned
+queries on a $16\!\times\!16\!\times\!16$ grid at startup and checks
+that all ten implementations yield identical point sets after
+enumeration.
+
+The full 20-platform sweep emits \texttt{select\_d*} and
+\texttt{restrict\_d*} measurement lines (for $d \in \{0.001, 0.01, 0.1,
+1.0\}$ relative window volumes) for every algorithm on every scenario,
+so the asymptotic claims above are checked across the same matrix used
+for \texttt{at} and \texttt{pos}.
+The measured \texttt{select} time scales linearly with the number of
+yielded fragments for every implementation, in line with the $O(d\,r)$
+yield term.
+On the EPYC~9454 reference platform the \texttt{restrict} cost (one full
+\texttt{select} pipe followed by a from-range IPT construction) is
+only about $1.6\%$ above the bare \texttt{select} cost for the IPT in
+geometric mean across the structured-scenario density sweep,
+confirming that restriction does not introduce
+asymptotic overhead beyond enumeration.
+
+The same comparison against the other instrumented baselines confirms
+the ranking established for \texttt{pos}.
+At a $d = 0.01$ window on the nine structured multiple-survey
+scenarios, the IPT's \texttt{select} is geometric-mean
+$7.0\times$ faster than \texttt{SortedPoints},
+$7.6\times$ faster than \texttt{RowCSR-k1},
+$68\times$ faster than \texttt{RowCSR-k2}, and
+$215\times$ faster than \texttt{LexRun};
+on the seven smaller scenarios where they are tractable,
+\texttt{DenseBitset} and \texttt{BlockBitmap} are
+$10.9\times$ and $8.8\times$ slower than the IPT.
+The corresponding \texttt{restrict} ratios fall within $\pm 15\%$ of
+those values (e.g.\ $6.2\times$ for \texttt{SortedPoints} and
+$6.7\times$ for \texttt{RowCSR-k1}), since restriction adds only the
+constant-factor from-range rebuild on top of \texttt{select}.
+The gaps widen further at smaller $d$ (where the IPT's binary search
+and skip over empty cuboids dominate the entire pipeline) and shrink
+at $d = 1$ as every implementation becomes yield-bound.
+
+\subsection{Summary of Empirical Regimes}
+\label{section:results-summary}
+
+The results show three practical regimes. On (strided-)regular inputs,
+the IPT preserves the regular-grid structure and, in our benchmarks,
+nearly matches the ideal mixed-radix baselines while keeping metadata
+constant in~$d$.
+On structured irregular inputs such as the multiple-survey workloads,
+the IPT keeps $\kappa$ far below $N$, which leads to substantial memory
+savings and clear \texttt{pos} gains over \texttt{SortedPoints}.
+On highly fragmented random subsets, $\kappa$ approaches~$N$, the memory
+advantage disappears, and the cost of the global binary search dominates
+\texttt{at} and can also erase the \texttt{pos} advantage. The governing
+parameter across all scenarios is therefore not sparsity alone but the
+amount of geometric structure captured by a small cuboid count.
+
+\section{Discussion and Limitations}
+\label{section:discussion}
+
+The experimental results are consistent with the complexity analysis.
+Construction scales linearly in~$N$
+(Section~\ref{section:results-construct}).
+The cuboid count $\kappa$ grows sub-linearly on random subsets and
+collapses to~1 on (strided-)regular inputs
+(Section~\ref{section:results-kappa}). Query times show the expected
+dependence on~$\kappa$ for both \texttt{at} and \texttt{pos}
+(Sections~\ref{section:results-pos} and~\ref{section:results-at}).
+
+Across all 61 workload shapes, the two construction algorithms produced
+identical decompositions and construction times that agree within a
+${\sim}1.1\times$ band in either direction across the 20
+platform/compiler combinations. This does not contradict the
+counterexamples from Section~\ref{section:construction}: it confirms
+that the corner-steal patterns required for combine to do anything
+different from merge are rare enough to be effectively absent from the
+tested input family. On non-artificial inputs the two algorithms are
+interchangeable in both result and performance, so we keep
+greedy-plus-merge as the simpler practical default for the detailed
+figures and rely on greedy-plus-combine only as the
+optimal-construction variant verified by \texttt{make verify}. On this
+benchmark suite its practical role is therefore correctness insurance
+and regression checking, not additional measured speed or compression.
+
+The evaluation also clarifies the paper's effective regime. The method
+is most compelling when irregular geometry still decomposes into few
+cuboids. In that setting it combines exactness, compact metadata, and
+fast \texttt{pos}. When fragmentation drives $\kappa$ toward~$N$, the
+advantages diminish and the representation approaches the cost profile
+of explicit point storage.
+
+A favorable but only partially covered regime in our
+benchmarks is a
+\emph{common degenerate dimension}. If all cuboids share the same
+ruler in one coordinate direction, then enlarging that common ruler
+does not change~$\kappa$. The IPT therefore keeps the same number of
+cuboids, the same metadata footprint, and the same asymptotic
+\texttt{at} and \texttt{pos} costs. The multiple-survey benchmarks do
+not isolate this effect cleanly: the first six structured scenarios use a
+singleton third dimension and are effectively two-dimensional, whereas
+the last three scenarios are 3D and vary in every dimension. If the
+common third-dimension extent in the first family were increased from
+$1$ to $1000$, the IPT metadata would remain unchanged, whereas a
+\texttt{SortedPoints} representation would store $1000$ times as many
+points and its \texttt{pos} search would become more expensive because it
+scales with the total point count.
+
+The main limitation is fragmentation. As $\kappa$ approaches~$N$, the
+advantages diminish. The flat IPT is also not a nearest-neighbor
+structure, and dynamic updates are awkward in the frozen form because
+they induce nonlocal changes in prefix indices.
+
+One scope limit bears stating explicitly: the
+construction algorithms are analyzed for sorted input and are evaluated
+under that assumption throughout the experiments.
+
+The experimental scenarios cover regular grids, random subsets,
+and structured synthetic survey layouts, including both 2D-in-3D
+multiple-survey cases and genuinely 3D block-survey layouts. That
+range is broad enough to
+show the main trade-offs, but it does not replace application studies
+on production geometries. Real-world workloads may expose additional
+construction patterns, especially outside the geoscience setting.
+
+\section{Conclusion}
+\label{section:conclusion}
+
+We introduced the Adaptive Index--Point Translator (IPT), an exact,
+adaptive, flat representation for irregular spatial point sets that
+composes a cuboid-selection binary search with the classical Horner
+rank/unrank scheme. The representation provides exact geometry,
+adaptive storage, flat memory layout, and geometric restriction within
+one array-based structure.
+
+On the algorithmic side, the paper gives linear-time construction
+procedures based on greedy repair. In particular, greedy-plus-combine
+achieves the minimum cuboid count in $O(dN)$ time on sorted input. The
+design-space analysis explains why the flat IPT is a natural
+systems-oriented extension of Horner-style rank/unrank for the goals of
+this paper.
+
+The experiments show that the approach is most effective when
+irregular data retains substantial cuboid structure. In that regime the
+IPT keeps about $14\%$ of the sorted-points memory on the tested
+structured survey layouts, improves \texttt{pos} by about $2.33\times$
+on those layouts, and also preserves the regular-grid case closely with
+the \texttt{c0r1e1l0} cache configuration.
+The cache-sweep results confirm that \texttt{c0r1e1l1} achieves the
+best pure query performance, but \texttt{c0r1e1l0} is the more broadly
+usable default because it caps metadata overhead at $40\%$ while
+retaining most of that query benefit. Particular workloads can still
+justify other cache settings, and the full 16-configuration sweep
+characterises the complete trade-off space.
+Future work includes broader application studies on production point
+distributions outside the geoscience domain, broader empirical
+comparisons against additional exact index structures, and dynamic or
+incremental construction strategies for mutable data.
+
+\appendix
+
+\section{Proofs}
+
+\subsection{One-Cuboid Recovery}
+\label{proof:one-cuboid-recovery}
+
+We prove that if the input point set is representable by a single cuboid and is processed in lexicographic order, the greedy-plus-merge algorithm reconstructs a one-cuboid decomposition with at most~$d$ intermediate cuboids at any point.
+
+\begin{proof}
+By induction on~$d$.
+
+\emph{Base case ($d=1$).}
+A one-dimensional cuboid is a ruler $R=[b,s,e)=\{b,b+s,\ldots,b+s(n-1)\}$. Its points arrive in lexicographic order exactly in that order. After the first $t$ points have been processed, the greedy-plus-merge state is the single ruler $[b,s,b+st)$. The next point $b+st$ extends this ruler to $[b,s,b+s(t+1))$, so the algorithm never creates a second cuboid. Hence it finishes with one cuboid, and at every moment there is at most one intermediate cuboid.
+
+\emph{Inductive step ($d \geq 2$).}
+A $d$-dimensional cuboid $C = R_0 \times \cdots \times R_{d-1}$ with $R_0=[b_0,s_0,e_0)$ decomposes in lexicographic order into the consecutive slices
+\[
+  S_h = \{b_0 + s_0 h\} \times R_1 \times \cdots \times R_{d-1},
+  \qquad h=0,\ldots,|R_0|-1.
+\]
+For each $h$, let
+\[
+  R_0^{(h)} = [b_0,s_0,b_0+s_0(h+1)),
+  \qquad
+  A_h = R_0^{(h)} \times R_1 \times \cdots \times R_{d-1}.
+\]
+Thus $A_h$ is the cuboid formed by the first $h+1$ slices.
+
+We claim by induction on $h$ that after the algorithm finishes slice $S_h$, it has reconstructed exactly the cuboid $A_h$. We also claim that while slice $S_h$ is being processed, the cuboid list consists of at most one accumulated cuboid from earlier slices together with the cuboids currently created inside $S_h$. Hence the total number of cuboids present at that time is at most $1+(d{-}1)=d$.
+
+For $h=0$, the slice $S_0$ is, apart from its fixed first coordinate, a $(d{-}1)$-dimensional one-cuboid input $R_1 \times \cdots \times R_{d-1}$. By the induction hypothesis on~$d$, the greedy-plus-merge algorithm reconstructs $S_0$ as one cuboid while using at most $d{-}1$ cuboids.
+
+Now assume the claim after slice $S_{h-1}$, so the current list is the single accumulated cuboid $A_{h-1}$. Consider the processing of $S_h$. Every cuboid created from points of $S_h$ has the singleton ruler $\{b_0+s_0 h\}$ in dimension~0. Therefore it can merge with $A_{h-1}$ only if it already agrees with $A_{h-1}$ in dimensions $1,\ldots,d-1$, which means that its rulers in those dimensions are exactly $R_1,\ldots,R_{d-1}$. That happens only when the whole slice has collapsed to the single cuboid $S_h$. Until then, $A_{h-1}$ cannot interfere with the slice-local merges. The behavior inside $S_h$ is therefore exactly the greedy-plus-merge behavior for the $(d{-}1)$-dimensional cuboid $R_1 \times \cdots \times R_{d-1}$. By the induction hypothesis on~$d$, the cuboids inside $S_h$ collapse to the single cuboid $S_h$ while using at most $d{-}1$ cuboids. At that point $A_{h-1}$ and $S_h$ agree in dimensions $1,\ldots,d-1$ and are adjacent in dimension~0, so the backward merge combines them into $A_h$.
+
+This proves the claim for every slice. After the last slice, $A_{|R_0|-1}=C$, so the algorithm reconstructs the input as one cuboid. During the processing of any slice there is at most one accumulated cuboid from earlier slices and at most $d{-}1$ cuboids inside the current slice, so the total number of cuboids present at any time is at most $d$.
+\end{proof}
+
+\subsection{Greedy-Plus-Combine Optimality}
+\label{proof:gpc-optimality}
+
+We prove that the greedy-plus-combine always produces a decomposition
+with the minimum number of cuboids.
+
+\begin{figure}[ht]
+\centering
+\iptCornerSteal
+\caption{Corner-steal and repair in $d = 2$.  The optimal decomposition has $C^*_0 = [1,4){\times}[1,2)$ (column) and $C^*_1 = [4,6){\times}[1,3)$ (block).  (a)~The greedy steals $p_1 = \operatorname{glb}(C^*_1) = (4,1)$ into the column.  (b)~After processing the remaining points, the algorithm holds the extended column~$C_0$, the partial fibre~$C_1 = \{(4,2)\}$, and the complete second slice~$C_2 = [5,6){\times}[1,3)$.  The bounding box $K = \operatorname{bbox}(C_1 \cup C_2)$ has a single deficit point $(4,1) \in C_0$.  (c)~The combine replaces $(C_0, C_1, C_2)$ by $C^*_0 = C_0 \setminus K$ and $C^*_1 = K$, restoring the optimum.}
+\Description{A three-panel schematic of the corner-steal phenomenon in two dimensions. The first panel shows the optimal two-cuboid decomposition. The second shows the greedy algorithm after one point has been absorbed into the wrong cuboid and identifies the deficit in the bounding box of the last two cuboids. The third panel shows the repaired optimal decomposition after the combine step.}
+\label{figure:corner-steal}
+\end{figure}
+
+\begin{proof}[Proof of greedy-plus-combine optimality]
+By strong induction on~$N$, with a secondary induction on~$d$.
+Let $(C^*_0, \ldots, C^*_{\kappa_{\text{opt}}-1})$ be a minimum-cuboid decomposition of~$D$, chosen so that $C^*_0$ is as large as possible. We show that the greedy-plus-combine reconstructs $C^*_0$ and never modifies it afterward.
+
+The argument has three stages. First, we show that the algorithm reconstructs the first optimal cuboid~$C^*_0$. Second, if the greedy scan extends past~$C^*_0$, we show that the overshoot can only be a corner-steal in~$\dim_0$ and that the combine step repairs it immediately. Third, once $C^*_0$ has appeared, we show that it remains stable: in the no-steal branch because canonical maximality rules out merges and lexicographic separation rules out combines, and in the post-repair branch because a strict gap in~$\dim_0$ isolates $C^*_0$ from all later cuboids.
+
+\paragraph{Recovery of~$C^*_0$.}
+Consider the prefix of the input consisting exactly of the points of~$C^*_0$. Since $C^*_0$ is one cuboid, the one-cuboid recovery result from Appendix~\ref{proof:one-cuboid-recovery} shows that greedy-plus-merge would finish this prefix as one cuboid. It remains to check that the extra combine step cannot change that outcome.
+
+The one-cuboid recovery proof processes $C^*_0$ slice by slice in dimension~0. While one slice is being processed, the cuboid list consists of one accumulated cuboid~$A$ from earlier slices together with the cuboids currently created inside the active slice. A combine involving $A$ cannot fire, because the bounding box of the last two cuboids lies entirely in the current slice, whereas~$A$ lies in earlier slices, so the deficit is disjoint from~$A$. A combine using only cuboids from the current slice also stays inside that slice. After deleting the fixed $\dim_0$ coordinate, it becomes exactly a greedy-plus-combine run on the $(d{-}1)$-dimensional one-cuboid input defined by that slice. By the secondary induction on~$d$, that lower-dimensional run reconstructs the slice as one cuboid. Hence each slice is finished correctly, and adjacent finished slices merge exactly as in one-cuboid recovery. When the last point of~$C^*_0$ has been processed, the current first cuboid is $C^*_0$.
+
+If the greedy scan stops there, then $C_0 = C^*_0$ and we can pass directly to the stability argument below. Otherwise the greedy absorbs at least one point of the next optimal cuboid~$C^*_1$.
+
+\paragraph{If the next point is absorbed, the direction must be $\dim_0$.}
+Let $p_1 = \operatorname{glb}(C^*_1)$. For $C^*_0 \cup \{p_1\}$ to be a cuboid, the new point can extend exactly one ruler of~$C^*_0$. Therefore every other ruler of~$C^*_0$ has length~$1$, so $C^*_0$ is a column in some dimension~$m$. Moreover $C^*_1$ cannot be a column in that same dimension with the same fixed coordinates in all other dimensions, because then $C^*_0 \cup C^*_1$ would itself be a cuboid and the chosen decomposition would not be optimal.
+
+Suppose $m > 0$. Then $C^*_0$ and the absorbed point~$p_1$ lie in one fixed $\dim_0$ slice. Before the algorithm leaves that slice, every point that can interact with this absorption also lies in that same slice. After deleting the fixed $\dim_0$ coordinate, both the input prefix and the corresponding part of the optimal decomposition become a $(d{-}1)$-dimensional instance with the same absorption pattern. By the secondary induction on~$d$, greedy-plus-combine already resolves that lower-dimensional instance optimally, so this absorption cannot persist when $m > 0$. Therefore the only remaining case is $m = 0$.
+
+\paragraph{Repair of the corner-steal.}
+Now $C^*_0$ varies only in~$\dim_0$ and has one fixed coordinate in every faster dimension. Let $m' \geq 1$ be the fastest dimension in which $C^*_1$ has extent greater than~$1$. Such a dimension exists, because otherwise $C^*_1$ would also be a $\dim_0$ column with the same fixed coordinates as~$C^*_0$, and the two cuboids would merge.
+
+Partition $C^*_1$ into \emph{fibres}, where a fibre is the set of points that agree in every coordinate except~$\dim_{m'}$. These fibres arrive consecutively in lexicographic order. The first fibre contains~$p_1$. Since $p_1$ has already been absorbed into~$C_0$, the greedy scan collects the remaining $n'_{m'} - 1$ points of that fibre into a cuboid~$C_1$. The next fibre is complete, so it forms a cuboid~$C_2$ of length $n'_{m'}$ in~$\dim_{m'}$. The two cuboids cannot merge, because their rulers in~$\dim_{m'}$ have different lengths.
+
+Let $K = \operatorname{bbox}(C_1 \cup C_2)$. This cuboid contains exactly the two fibres together with the single missing point~$p_1$. Hence the deficit of~$K$ is precisely $\{p_1\}$, which lies in~$C_0$. Removing~$K$ from the extended column restores the original column, so $C_0 \setminus K = C^*_0$ is again a cuboid. Therefore the combine step replaces $(C_0, C_1, C_2)$ by $(C^*_0, K)$ and repairs the earlier absorption of~$p_1$ into the current cuboid as soon as the second fibre has been processed.
+
+From that point on, $K$ is the correct beginning of~$C^*_1$. The remaining fibres in the current $\dim_0$ slice are complete and arrive consecutively, so one-cuboid recovery merges them into~$K$ one after another. When that first $\dim_0$ slice of~$C^*_1$ is complete, it has become one cuboid. Every later $\dim_0$ slice of~$C^*_1$ is itself a complete $(d{-}1)$-dimensional cuboid. Again by one-cuboid recovery, each such slice collapses and then merges with the accumulated part of~$C^*_1$. Thus the algorithm reconstructs $C^*_1$ while keeping $C^*_0$ in place.
+
+\paragraph{Stability of~$C^*_0$.}
+Once the algorithm has a cuboid equal to~$C^*_0$, that cuboid is never modified again.  We treat the two possible configurations at the moment $C^*_0$ becomes the first cuboid separately, since they admit very different stability arguments: in the no-steal branch~$C^*_0$ may have arbitrary shape and the argument has to be carried out across all~$d$ dimensions, whereas after a corner-steal repair~$C^*_0$ is by construction a $\dim_0$-column whose $\dim_0$-range is strictly below every subsequent input point.
+
+\emph{No-steal branch.}
+If no steal occurs, $C_0 = C^*_0$ once the prefix corresponding to~$C^*_0$ has been processed, and the next input point is $p_1 = \operatorname{glb}(C^*_1)$. We rule out merge and combine separately: merge is excluded by the canonical-decomposition choice of~$C^*_0$, while combine is excluded by lexicographic separation.
+
+\emph{No merge.}
+Recall that the optimal decomposition $(C^*_0, \ldots, C^*_{\kappa_{\mathrm{opt}}-1})$ was chosen, among all minimum-$\kappa$ decompositions of~$D$, to maximise $|C^*_0|$ (canonical decomposition).  Suppose a later cuboid~$C_l$ ($l \geq 1$) merges with~$C^*_0$ during the run, so that $C^*_0 \cup C_l$ is a cuboid.  By the strong induction hypothesis on~$N$ applied to $D \setminus (C^*_0 \cup C_l)$, greedy-plus-combine produces a minimum-cuboid decomposition $(C''_0, \ldots)$ of that residual.  Then $(C^*_0 \cup C_l, C''_0, \ldots)$ is a minimum-cuboid decomposition of~$D$ whose first cuboid strictly exceeds~$C^*_0$ in size, contradicting the canonical-decomposition hypothesis.
+
+\emph{No combine.}
+Since $C^*_0$ is the first cuboid in the output list and the combine acts on the last three cuboids, a combine targeting~$C^*_0$ is necessarily the first combine, with triple $(C^*_0, C', C'')$ for two later cuboids~$C', C''$.  For it to fire, the bounding box $K = \operatorname{bbox}(C' \cup C'')$ must satisfy $K \cap C^*_0 \neq \emptyset$ (the deficit lies in~$C^*_0$).  We show $K \cap C^*_0 = \emptyset$ by induction on the dimension index.
+
+Strict lexicographic ascent of the output cuboid list gives $\operatorname{lub}(C^*_0) <_{\mathrm{lex}} \operatorname{glb}(C') <_{\mathrm{lex}} \operatorname{glb}(C'')$.  Let $j \in \{0, \ldots, d{-}1\}$ be the smallest index with $\operatorname{lub}_j(C^*_0) < \operatorname{glb}_j(C')$, and let $j' \in \{0, \ldots, d{-}1\}$ be the smallest index with $\operatorname{glb}_{j'}(C') < \operatorname{glb}_{j'}(C'')$.  Suppose for contradiction that $q \in K \cap C^*_0$, so $q_i \leq \operatorname{lub}_i(C^*_0)$ and $q_i \geq \operatorname{glb}_i(K) = \min(\operatorname{glb}_i(C'), \operatorname{glb}_i(C''))$ for every~$i$.
+
+\emph{Coordinates $i < \min(j, j')$.}
+By definition of~$j$ and~$j'$, $\operatorname{glb}_i(C') = \operatorname{lub}_i(C^*_0)$ and $\operatorname{glb}_i(C'') = \operatorname{glb}_i(C')$, so $\operatorname{glb}_i(K) = \operatorname{lub}_i(C^*_0)$.  Combined with $q_i \leq \operatorname{lub}_i(C^*_0)$ this forces $q_i = \operatorname{lub}_i(C^*_0)$.
+
+\emph{Case $j \leq j'$.}
+At dimension~$j$ we have $\operatorname{glb}_j(C') > \operatorname{lub}_j(C^*_0)$ by definition of~$j$, and $\operatorname{glb}_j(C'') \geq \operatorname{glb}_j(C')$ because $j \leq j'$.  Hence $\operatorname{glb}_j(K) > \operatorname{lub}_j(C^*_0) \geq q_j$, contradicting $q_j \geq \operatorname{glb}_j(K)$.
+
+\emph{Case $j' < j$.}
+At dimension~$j'$, $\operatorname{glb}_{j'}(C') = \operatorname{lub}_{j'}(C^*_0)$ (since $j' < j$) and $\operatorname{glb}_{j'}(C'') > \operatorname{glb}_{j'}(C')$, so $\operatorname{glb}_{j'}(K) = \operatorname{lub}_{j'}(C^*_0)$ and the previous-paragraph argument forces $q_{j'} = \operatorname{lub}_{j'}(C^*_0) = \operatorname{glb}_{j'}(C')$.  In particular $q_{j'} < \operatorname{glb}_{j'}(C'')$, so every point of~$C''$ has $\dim_{j'}$-coordinate strictly greater than~$q_{j'}$ and $C''$ contributes nothing to the bounding box of~$K$ on the slice $\{x : x_{j'} = q_{j'}\}$.  Restricted to that slice, $K$ coincides with $\operatorname{bbox}(C')$.  Delete the first $j'{+}1$ coordinates and project to the remaining coordinates $\{j'{+}1, \ldots, d{-}1\}$.  The projected point still lies in both the projection of~$C^*_0$ and the projection of~$K$, and the first lexicographic disagreement between the projected cuboids now occurs at coordinate $j - j' - 1 \geq 0$.  Thus the same obstruction would reappear in $d - j' - 1$ dimensions for the projected pair $(C^*_0, C')$, contradicting the induction hypothesis for that lower-dimensional problem.
+
+In either case $K \cap C^*_0 = \emptyset$, so no combine fires.
+
+\emph{Post-repair branch.}
+If the greedy scan absorbs the first point $p_1 = \operatorname{glb}(C^*_1)$ of the next optimal cuboid into the current first cuboid, then the repair above restores~$C^*_0$.  After the repair, $C^*_0$ varies only in~$\dim_0$ and $\operatorname{lub}_0(C^*_0) < p_{1,0}$.  Every later cuboid consists of points from $C^*_1 \cup C^*_2 \cup \cdots$ with $\dim_0$-coordinate $\geq p_{1,0}$.  Therefore any bounding box $K' = \operatorname{bbox}(C_{L-1} \cup C_L)$ formed from later cuboids satisfies $\operatorname{glb}_0(K') \geq p_{1,0} > \operatorname{lub}_0(C^*_0)$, making $K' \cap C^*_0 = \emptyset$ on the strength of $\dim_0$ alone, without invoking the multi-dimensional descent of the no-steal branch.  The same one-dimensional gap also rules out a merge: any merger with~$C^*_0$ would require an adjacent ruler in~$\dim_0$, but the smallest available $\dim_0$-coordinate among later points is~$p_{1,0}$, which strictly exceeds $\operatorname{lub}_0(C^*_0)$ rather than being adjacent to it.
+
+\paragraph{Induction on~$N$.}
+Since $C_0 = C^*_0$ and is stable, the algorithm processes $D' = D \setminus C^*_0$ independently.  By strong induction on~$N$ ($|D'| < |D|$), the greedy-plus-combine produces a minimum-cuboid decomposition of~$D'$.  The total cuboid count is $1 + (\kappa_{\text{opt}} - 1) = \kappa_{\text{opt}}$.
+\end{proof}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{IPT}
+
+\end{document}
