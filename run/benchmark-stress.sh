@@ -59,6 +59,7 @@ compile_combination_binary()
     "-DIPT_BENCHMARK_CACHE_ENTRY_END=${end}"
     "-DIPT_BENCHMARK_CACHE_ENTRY_LUB=${lub}"
     benchmark.cpp
+    third_party/CRoaring/roaring.c
     -o
     "$binary"
   )

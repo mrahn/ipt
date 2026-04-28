@@ -17,7 +17,7 @@ reference_config="${IPT_BENCHMARK_REFERENCE_CONFIG:-c0r0e0l0}"
 
 cache_dependent_algorithms="${IPT_BENCHMARK_CACHE_DEPENDENT_ALGORITHMS:-greedy-plus-merge,greedy-plus-combine,regular-ipt}"
 light_cache_independent_algorithms="${IPT_BENCHMARK_LIGHT_CACHE_INDEPENDENT_ALGORITHMS:-sorted-points,lex-run,row-csr-k1,row-csr-k2,grid}"
-heavy_cache_independent_algorithms="${IPT_BENCHMARK_HEAVY_CACHE_INDEPENDENT_ALGORITHMS:-dense-bitset,block-bitmap}"
+heavy_cache_independent_algorithms="${IPT_BENCHMARK_HEAVY_CACHE_INDEPENDENT_ALGORITHMS:-dense-bitset,block-bitmap,roaring}"
 
 grid_scenarios="${IPT_BENCHMARK_GRID_SCENARIOS:-regular,random-1pct,random-2pct,random-5pct,random-10pct,random-25pct,random-50pct,random-75pct,random-90pct,random-95pct,random-98pct,random-99pct,random-100pct}"
 core_structured_scenarios="${IPT_BENCHMARK_CORE_STRUCTURED_SCENARIOS:-multiple-survey-2-l,multiple-survey-3-steps,multiple-survey-4-overlap,multiple-survey-5-mixed,multiple-survey-6-bands,multiple-survey-7-large,multiple-survey-8-threed,multiple-survey-10-sixteen,multiple-survey-11-thirtysix}"
@@ -100,6 +100,7 @@ compile_combination_binary()
     "-DIPT_BENCHMARK_CACHE_ENTRY_END=${end}"
     "-DIPT_BENCHMARK_CACHE_ENTRY_LUB=${lub}"
     benchmark.cpp
+    third_party/CRoaring/roaring.c
     -o
     "$binary"
   )

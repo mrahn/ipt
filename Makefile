@@ -19,7 +19,7 @@ PLOT_NAMES += pos-multiple-survey
 PLOT_NAMES += pos-ratio-vs-density
 
 # Extra extractor that produces a stand-alone summary report.
-EXTRA_EXTRACTORS := select-restrict-summary
+EXTRA_EXTRACTORS := select-restrict-summary stress-summary
 
 EXTRACT_NAMES := $(PLOT_NAMES) $(EXTRA_EXTRACTORS)
 EXTRACT_BIN_DIR := generated/extract
@@ -85,6 +85,12 @@ generated/$(1).tex generated/$(1).pdf &: \
 	gnuplot $$<
 endef
 $(foreach p,$(PLOT_NAMES),$(eval $(call PLOT_RULE,$(p))))
+
+# Stress summary: extractor writes the LaTeX table directly.
+generated/stress-summary.tex: $(EXTRACT_BIN_DIR)/stress-summary $(RESULT_FILES) | generated
+	$< > $@
+
+PLOTS += generated/stress-summary.tex
 
 generated:
 	mkdir -p generated

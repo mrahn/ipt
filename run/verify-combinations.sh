@@ -44,7 +44,7 @@ verify_one()
       "-DIPT_BENCHMARK_CACHE_RULER_SIZE=${ruler}" \
       "-DIPT_BENCHMARK_CACHE_ENTRY_END=${end}" \
       "-DIPT_BENCHMARK_CACHE_ENTRY_LUB=${lub}" \
-      benchmark.cpp -o "$binary" \
+      benchmark.cpp third_party/CRoaring/roaring.c -o "$binary" \
       >"$log" 2>&1
   then
     printf 'FAILURE  %s  compile error:\n' "$label"

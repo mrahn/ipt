@@ -544,13 +544,15 @@ The IPT is closed
 under geometric restriction, enabling processing units to store
 only their sub-region's metadata.
 We prove that a greedy-plus-combine construction algorithm
-achieves the optimal IPT size in $O(dN)$ time on sorted input.
-Benchmarks on twenty x86 platform/compiler combinations with regular
-grids, random subsets, and structured synthetic multiple-survey layouts show that the IPT
-reaches $169{-}180$\,Mpos/s on the tested regular grids while staying
-within $1\%$ of pure mixed-radix rank/unrank on that regular case,
-uses $13.8\%$ of the memory of a sorted-points table on the structured
-multiple-survey layouts, and accelerates \texttt{pos} by
+achieves the optimal IPT size in $O(dN)$ time on lexicographically
+sorted input. Benchmarks on twenty x86 platform/compiler combinations
+with regular grids, random subsets, and structured synthetic
+multiple-survey layouts (all measured from sorted input) show that the
+IPT reaches $169{-}180$\,Mpos/s on the tested regular grids while
+staying within $1\%$ throughput of pure mixed-radix rank/unrank on
+that regular case, uses $13.8\%$ of the memory of a sorted-points
+table on the structured multiple-survey layouts, and accelerates
+\texttt{pos} by
 $9.3{-}40.7\times$ on regular grids and by ${\sim}2.33\times$ on the
 structured workloads.
 \end{abstract}
@@ -604,6 +606,29 @@ each processing unit can store only its own sub-region's
 metadata. These properties make it useful for local geometric
 processing, geometric decomposition across processing units, and
 incremental adoption in legacy regular-grid codes.
+
+\paragraph{Effective regime.}
+The empirical evaluation in this paper makes the regime in which the
+IPT is competitive precise. The IPT shines on structured irregular
+workloads where the cuboid count $\kappa$ stays far below the point
+count $N$ and where the dominant query is
+\texttt{pos}-heavy, selection-heavy, or restriction-heavy: in those
+regimes it offers compact metadata, fast point-to-index lookup, and a
+geometric restriction operator that closes back into the same layout.
+The trade-off it pays is on \texttt{at}-heavy traversals of structured
+workloads, where a sorted-points table can do less work per query;
+Section~\ref{section:results-at} reports that gap honestly, and the
+introduction therefore does not claim a uniform speedup. On
+(strided-)regular inputs the IPT collapses to the Horner case and
+costs essentially the same as a hand-written mixed-radix
+implementation. On highly fragmented random subsets, where $\kappa$
+approaches $N$, the structural advantage disappears and the
+representation behaves like explicit point storage. The proven optimal
+constructor (greedy-plus-combine) coincides exactly with the simpler
+greedy-plus-merge on every one of the 61 organic workload shapes; its
+practical role in our experiments is therefore correctness insurance
+rather than measurable additional compression, and we frame it as such
+in the rest of the paper.
 
 Section~\ref{section:requirements} states the problem and derives the
 requirements. Section~\ref{section:existing} reviews related work.
@@ -726,6 +751,28 @@ contiguous runs, support rank/unrank, and admit flat layouts. The main
 open step is the multi-dimensional extension, where one needs cuboids
 in place of intervals together with both rank and unrank support.
 
+\paragraph{Compressed bitmap indexes.}
+Roaring bitmaps~\cite{ChambiLemireKaserGodin2016,LemireBoyttsovKurz2018}
+encode large 32-bit set memberships by partitioning the universe into
+$2^{16}$-element chunks and storing each chunk in the most compact of
+three containers (sorted array, run-length, or bitmap). They are exact,
+dense-friendly, and support fast intersection, but they are designed
+for 1D set membership and rely on a $2^{16}$-aligned chunking that does
+not generalise to multi-dimensional cuboid metadata of the form used
+here.
+
+\paragraph{Succinct rank/select dictionaries.}
+Succinct data structures based on rank/select queries on bit
+vectors~\cite{Jacobson1989,RamanRamanRao2007} achieve
+information-theoretic optimal space for set membership while
+supporting $O(1)$ rank and select. They underlie many compact spatial
+indexes including $k^2$-trees for binary relations and adjacency
+matrices~\cite{BrisaboaLadraNavarro2014}, which compactly encode
+2D-clustered binary data. These structures are exact and compact, but
+they provide rank/select on bit positions rather than directly on
+multi-dimensional points, and are not pointer-free in the same flat
+sense as the IPT.
+
 \paragraph{Block-sparse and tiled sparse formats.}
 Block-CSR and variable-block-row formats~\cite{ImYelickVuduc2004,Vuduc2005}
 exploit clustering by grouping entries into dense sub-blocks. The ELL
@@ -734,11 +781,22 @@ follow a similar idea. These formats capture some regularity and can be
 storage efficient, but they are designed around sparse linear algebra
 rather than bidirectional translation between flat indices and points.
 
+\paragraph{Higher-dimensional sparse tensor formats.}
+Multi-dimensional generalisations of CSR include the Compressed Sparse
+Fiber (CSF) format~\cite{SmithKarypis2015} and the hierarchical
+coordinate format HiCOO~\cite{LiSunVuduc2018}. CSF stores a tensor as
+a hierarchy of mode-aligned fiber arrays, while HiCOO partitions the
+tensor into super-blocks and stores per-super-block local coordinates
+in reduced bit width. Both compress regular structure along selected
+modes, but they target sparse-tensor multiplication kernels and do not
+expose a flat global rank/unrank pair over the occupied points.
+
 \paragraph{Space-filling curves.}
 Space-filling curves such as the Morton (Z-order) curve~\cite{Morton1966} and the Hilbert curve map multi-dimensional coordinates to a single linear index via bit-interleaving.
-The resulting ordering preserves spatial locality well enough for range queries with B\nobreakdash-trees.
+The resulting ordering preserves spatial locality well enough for range queries with B\nobreakdash-trees~\cite{LawderKing2001,TropfHerzog1981}, including run-length-compressed variants over the curve codes themselves.
 However, for a sparse subset the curve still requires an explicit list
-of occupied codes. It therefore gives an ordering rather than a
+of occupied codes (or a compressed bitmap over them, which inherits
+the limitations above). It therefore gives an ordering rather than a
 compressed exact representation of structured sparse geometry, and its
 coordinate scrambling is not compatible with Horner-style rank/unrank.
 
@@ -815,7 +873,7 @@ Without the divisibility constraint, any $e'$ with $\operatorname{lub}(R) < e' \
 distinct representations. The condition $s \mid (e-b)$ selects the unique
 representative $e = b + sn = \operatorname{lub}(R)+s$.
 Several properties are then direct consequences of the definition:
-(i)~$\operatorname{lub}(R) = e-s$, (ii)~$|R| = (e-b)/s$ is an exact integer operations with no rounding.
+(i)~$\operatorname{lub}(R) = e-s$, (ii)~$|R| = (e-b)/s$ is an exact integer operation with no rounding.
 (iii)~two rulers represent the same set if and only if their triples $(b,s,e)$
 are equal component-wise, enabling $O(1)$ equality.
 (iv)~the adjacency condition for merging two rulers $R_1$ and $R_2$ reduces to the test $\operatorname{lub}(R_1)+s = \operatorname{glb}(R_2)$.
@@ -1020,16 +1078,12 @@ Exactness
 Adaptive space
   & Metadata is $O(d\kappa)$. On (strided-)regular data $\kappa = 1$
     and the footprint is constant for fixed~$d$.
-    On the structured multiple-survey scenarios the IPT uses $13.8\%$
-    of the sorted-points footprint with the selected default
-    configuration and $10.5\%$ in the minimal-footprint
-    configuration. \\
+    See Section~\ref{section:results-kappa} for the measured
+    structured-workload memory ratios. \\
 Adaptive access time
   & \texttt{at} is $O(d+\log\kappa)$ and \texttt{pos} is
     $O(d\log\kappa)$.
-    On (strided-)regular data ($\kappa = 1$) both reduce to $O(d)$.
-    Measured \texttt{pos} reaches ${\sim}180$\,Mpos/s on a regular
-    $100{\times}100{\times}100$ grid. \\
+    On (strided-)regular data ($\kappa = 1$) both reduce to $O(d)$. \\
 Flat layout
   & A single contiguous vector of entries, with no pointers and no
     tree nodes. Directly serializable and memory-mappable. \\
@@ -1125,7 +1179,7 @@ The improved algorithm augments the greedy scan with local repair.
   \item Stop when no further backward merge is possible.
 \end{enumerate}
 
-Two cuboids can be merged if and only if they are equal in all but one dimension and their rulers in the remaining dimension extend to a single larger ruler. For non-singleton rulers this is the usual equal-stride adjacency condition. Two singleton rulers always extend to a two-point ruler, and a singleton extends a non-singleton ruler exactly when it lies one stride before or after that ruler. This merge test is local and has cost $O(d)$.
+Two cuboids can be merged if and only if they are equal in all but one dimension and their rulers in the remaining dimension extend to a single larger ruler. For non-singleton rulers the condition is the equal-stride adjacency condition, $\operatorname{lub}(R)+s = b'$ where $R$ ends at $\operatorname{lub}(R)$ with stride $s$ and the next ruler $R'$ starts at $b'$ with the same stride. Two singleton rulers always extend to a two-point ruler, and a singleton extends a non-singleton ruler exactly when it lies one stride before or after that ruler. This merge test is local and has cost $O(d)$.
 The greedy mechanism maintains strict ascent: a new cuboid is only appended (or merged into the current last one) when its glb is strictly greater in lexicographic order than the lub of the current last cuboid, which is the defining condition of a valid IPT.
 
 \paragraph{Example (continued).}
@@ -1335,6 +1389,13 @@ This explains why the IPT preserves the (strided-)regular case: with the impleme
 
 \subsection{Recursive IPT}
 
+The recursive variant is included here as a design-space landmark, not
+as a benchmarked competitor. We do not implement, measure, or ship it
+with the artifact. Its purpose in this paper is to make the rationale
+for the flat IPT precise: by spelling out the alternative
+generalisation of Horner-style rank/unrank, we can compare the two
+variants analytically and explain why we chose the flat IPT.
+
 A more explicit recursive generalization is also possible. Instead of resolving irregularity with one global search, one generalizes each Horner divmod step: at dimension $j$, a binary search over admissible ruler intervals selects the next recursive step, and the local position inside that ruler replaces the corresponding divmod digit.
 
 In the (strided-)regular case, each directory contains exactly one interval, so the binary searches are trivial. In the irregular case, the directories express ambiguity and resolve it one dimension at a time.
@@ -1363,9 +1424,13 @@ Under this compressed layout the total directory metadata is
   2\cdot(3+1+1) + 2\cdot(3+1) = 18
 \]
 scalars: two root entries with ruler, prefix, and child reference, plus two terminal leaf entries with ruler and prefix.
-By contrast, the flat IPT stores two cuboid records with base, stride,
-and bound for each ruler, plus two prefix sums, for a total of
-$14$~scalars.
+By contrast, the flat IPT under its minimal cache configuration
+\texttt{c0r0e0l0} stores two cuboid records with base, stride, and
+bound for each of the $d=2$ rulers, plus the prefix sum
+of cardinalities, for a total of
+$2\cdot(2\cdot 3 + 1) = 14$~scalars; cache flags such as the
+default \texttt{c0r1e1l0} add fields per record, as discussed in
+Section~\ref{section:selection}.
 
 To evaluate $\operatorname{pos}(5,3)$ with the recursive variant:
 a scalar binary search in the root directory selects the first entry
@@ -1488,8 +1553,7 @@ representation-independent: they operate on the mathematical objects,
 not on how the IPT stores them, so both variants use the same algorithm
 at the same cost.
 The IPT-cuboid intersection and selection operation
-differ is where the two representations genuinely
-differ.
+is where the two representations genuinely differ.
 The flat IPT performs a single binary search on $\operatorname{lub}(C)$
 to find the first candidate cuboid, then scans forward testing each of
 $t$~candidates via an~$O(d)$ cuboid intersection, for a total of
@@ -1517,28 +1581,18 @@ decomposes across dimensions.
 
 \medskip
 \noindent
-\begin{tabular}{@{}l@{\;\;}l@{\;\;}l@{\;\;}l@{}}
-\toprule
-& \textbf{(Strided-)regular} ($\kappa=1$)
-& \textbf{Highly regular} ($\kappa\ll N$)
-& \textbf{Highly irregular} ($\kappa\approx N$) \\
-\midrule
-\multicolumn{4}{@{}l}{\emph{Storage}} \\
-\quad Flat IPT        & $\Theta(d)$ & $\Theta(d\kappa)$ & $\Theta(dN)$ \\
-\quad Recursive IPT   & $\Theta(d)$ & $O(d\kappa)$      & $\Theta(dN)$ \\[4pt]
-\multicolumn{4}{@{}l}{\emph{\texttt{at}}} \\
-\quad Flat IPT        & $O(d)$ & $O(d+\log\kappa)$  & $O(d+\log N)$ \\
-\quad Recursive IPT   & $O(d)$ & $O(d+\log\kappa)$--$O(d\log\kappa)$ & $O(d+\log N)$--$O(d\log N)$ \\[4pt]
-\multicolumn{4}{@{}l}{\emph{\texttt{pos}}} \\
-\quad Flat IPT        & $O(d)$ & $O(d\log\kappa)$\rlap{${}^{\dagger}$}  & $O(d\log N)$\rlap{${}^{\dagger}$} \\
-\quad Recursive IPT   & $O(d)$ & $O(d\log\kappa)$\rlap{${}^{\ddagger}$} & $O(d\log N)$\rlap{${}^{\ddagger}$} \\[4pt]
-\multicolumn{4}{@{}l}{\emph{Selection} ($t$~candidates, $m_k$~nodes visited at level~$k$)} \\
-\quad Flat IPT        & $O(d)$ & $O(d\log\kappa+dt)$  & $O(d\log N+dt)$ \\
-\quad Recursive IPT   & $O(d)$ & $O(\log\kappa{\cdot}\textstyle\sum m_k)$ & $O(\log N{\cdot}\textstyle\sum m_k)$ \\
-\bottomrule
-\multicolumn{4}{@{}l}{\footnotesize ${}^{\dagger}$\,tuple comparisons;\;
-  ${}^{\ddagger}$\,scalar comparisons}
-\end{tabular}
+The summary is therefore: in the (strided-)regular case both variants
+collapse to $\Theta(d)$ storage and $O(d)$ queries; in the highly
+regular regime the asymptotic costs match, but the recursive variant
+trades $O(d)$ tuple comparisons for $O(d)$ scalar comparisons at the
+price of pointer-chasing access and a query bound that depends on how
+the cuboids project across dimensions; in the highly irregular regime
+the flat IPT keeps a guaranteed $O(d+\log N)$ \texttt{at} cost while
+the recursive variant ranges between $O(d+\log N)$ and $O(d\log N)$
+depending on early vs.\ late separation. For selection, the flat IPT
+pays $O(d\log\kappa+dt)$, while the recursive traversal pays
+$O(\log\kappa\cdot\sum m_k)$ on the visited directory nodes, which
+gains only when $\sum m_k$ is much smaller than $dt$.
 
 \subsection{Design Choice}
 
@@ -1679,19 +1733,18 @@ Grid
 \end{tabular}
 \end{table}
 
-\paragraph{Differences from the industrial implementation.}
-The industrial implementation shares the same algorithms but uses
-pre-allocated or memory-mapped storage (at most one allocation), targets
-C++14, and reports errors via an \texttt{expected}-style return type.
-The benchmark artifact instead uses throwing query methods, targets
-C++23, uses \texttt{std::vector} with doubling growth, and exposes the
-selection pipeline needed for the
-Section~\ref{section:results-selection} measurements: \texttt{IPT}
-provides \texttt{select}, and \texttt{restrict} is evaluated by feeding
-that view into the \texttt{std::from\_range} constructor. These
-differences change the surrounding API and storage strategy, but not the
-ordered-entry search and cuboid-local translation kernels that dominate
-the measured hot paths. No exception is thrown on any measured hot path.
+\paragraph{Benchmark vs.\ industrial implementation.}
+The benchmarked implementation targets C++23, uses \texttt{std::vector}
+with doubling growth, throws on out-of-range queries (no throw is
+hit on any measured hot path), and exposes the selection pipeline
+needed for the Section~\ref{section:results-selection} measurements:
+\texttt{IPT} provides \texttt{select}, and \texttt{restrict} is
+evaluated by feeding that view into the \texttt{std::from\_range}
+constructor. The cuboid-search and cuboid-local translation kernels
+that dominate the measured hot paths are unchanged from the deployed
+C++14 implementation, which differs only in surrounding storage and
+error-reporting strategy (single-allocation/mmap-friendly buffers,
+\texttt{expected}-style return type).
 
 The benchmark driver evaluates the cache-dependent IPT implementations
 (greedy-plus-merge, greedy-plus-combine, and Regular-IPT) under all
@@ -1787,8 +1840,13 @@ They are synthetic but practically motivated stress cases rather than
 direct captures from production surveys.
 The first six scenarios are effectively 2D (singleton third dimension),
 whereas the last three are 3D block arrangements.
-After deduplication they contain between 71\,100 and 9\,264\,024 unique
+After deduplication, they contain between 71\,100 and 9\,264\,024 unique
 points.
+A separately reported, opt-in fifth-dimensional stress scenario
+(\texttt{multiple-survey-9-5d}) extends the same family to genuine
+$d=5$ seismic-style geometries at $\sim\!9.2\times 10^7$ unique points;
+it is described and measured in
+Section~\ref{section:results-stress-5d}.
 
 \begin{table}[ht]
 \centering
@@ -1870,11 +1928,16 @@ comparisons under ordinary server conditions rather than cycle-accurate
 microarchitectural microbenchmarks.
 
 \paragraph{Cache configurations.}
-The implementation exposes four boolean compile-time flags (\texttt{c},
-\texttt{r}, \texttt{e}, \texttt{l}) that each control whether
-a derived quantity (such as a ruler size, a cuboid size, or an entry's end
-index or bounding point) is cached as an additional stored field, yielding
-$2^4 = 16$ possible configurations.
+The implementation exposes four boolean compile-time flags
+\texttt{c}~(cuboid size), \texttt{r}~(ruler size), \texttt{e}~(entry's
+end index, i.e.\ the prefix-sum upper bound), and \texttt{l}~(entry's
+least upper bound, i.e.\ the cached \(\operatorname{lub}\) point used
+by \texttt{pos}'s binary search), each controlling whether the
+corresponding derived quantity is materialised as an additional stored
+field, yielding $2^4 = 16$ possible configurations. We refer to a
+configuration by the bit pattern of these flags, e.g.\ \texttt{c0r1e1l0}
+for the default with ruler size and entry-end cached but cuboid size
+and entry lub omitted.
 
 \subsection{Configuration Selection}
 \label{section:selection}
@@ -1923,8 +1986,8 @@ With both \texttt{r} and \texttt{l} enabled, \texttt{pos} drops to about
 $0.91\times$ of the uncached baseline, while \texttt{at} stays near
 $0.43\times$.
 For a query-only objective, \texttt{c0r1e1l1} is therefore the best
-frontier point, but its metadata grows to $1.70\times$ of
-\texttt{c0r0e0l0}.
+frontier point, but its metadata grows to $1.70\times$ the size of the
+minimal-footprint \texttt{c0r0e0l0} configuration.
 We instead select \texttt{c0r1e1l0} as the default because it keeps the
 overhead within a $40\%$ memory budget while retaining most of the query
 benefit: relative to \texttt{c0r0e0l0} it yields $0.965\times$
@@ -1970,6 +2033,16 @@ We use AMD EPYC~9454 (Rocky~10.1 / GCC~14.3.1) as that reference.
 \subsection{Construction Performance}
 \label{section:results-construct}
 
+Both the IPT constructors and the \texttt{SortedPoints} baseline are
+benchmarked on lexicographically sorted input, matching the precondition
+of the optimality proof in Section~\ref{section:construction} and the
+scope statement in Section~\ref{section:discussion}; neither side
+includes the cost of producing that ordering. Pipelines that start from
+an unordered point list incur the same sort cost for both formats, so
+the build-time ratio reported here is invariant under that shared
+prefix; the absolute amortization point shifts uniformly once a sort is
+charged.
+
 On the EPYC~9454 reference platform, greedy-plus-merge construction
 reaches $42.2{-}45.8$\,Mpoint/s on regular grids.
 On the structured multiple-survey scenarios it achieves
@@ -1979,17 +2052,21 @@ varying block layouts.
 and reaches up to ${\sim}\!660$\,Mpoint/s on the regular grids and
 $90{-}330$\,Mpoint/s on the structured scenarios, so the IPT is
 ${\sim}3.8\times$ more expensive to build on the structured workloads
-(geometric mean).
+(geometric mean), again with both sides starting from sorted input.
 The cost is dominated by cuboid discovery and merging.
 At the geometric-mean rates on the structured scenarios
 (${\sim}40$\,Mpoint/s construction, ${\sim}10$\,Mpos/s \texttt{pos}),
 the $3.8\times$ build overhead amounts to an extra ${\sim}18$\,ns per
 input point; the $2.33\times$ \texttt{pos} speedup over
 \texttt{SortedPoints} saves ${\sim}125$\,ns per query.
-The IPT therefore recovers its build cost after approximately $N/7$
-\texttt{pos} queries, where $N$ is the number of input points.
-Any workload that issues at least one query per seven stored points (like repeated-timestep simulations with fixed geometry do)
-amortises construction within the first pass.
+Under the same sorted-input assumption, the IPT therefore recovers its
+build cost after approximately $N/7$ \texttt{pos} queries, where $N$ is
+the number of input points.
+Any workload that issues at least one query per seven stored points
+(like repeated-timestep simulations with fixed geometry do) amortises
+construction within the first pass; pipelines that must additionally
+sort their input pay that sort cost once and amortise it identically
+for both formats.
 Figure~\ref{figure:construct-multi-survey} shows the per-point
 construction time on the nine structured multiple-survey scenarios.
 Figure~\ref{figure:construct-vs-density} shows construction time
@@ -2162,15 +2239,21 @@ $\textsc{select}: Q \mapsto \{\, C_h \cap Q : C_h \cap Q \neq \emptyset
 \,\}$
 and, by re-feeding its result into the from-range constructor, a
 restriction operator $\textsc{restrict}(Q) = \mathrm{IPT}(\textsc{select}(Q))$.
-The expected cost of one full enumeration is
+Under the same tuple-comparison model used in
+Section~\ref{section:operations-restriction}, the expected cost of one
+full enumeration is
 \[
-  O(\log\kappa + d\,t + d\,r),
+  O(d\log\kappa + d\,t + d\,r),
 \]
 where $t$ is the number of cuboid candidates touched by the binary-bound
 search and $r$ is the number of non-empty intersection cuboids
-returned. The $\log\kappa$ term is the one-shot binary search; $d\,t$ is
-the per-candidate intersection cost; $d\,r$ is the per-result yield
-cost.
+returned. The $d\log\kappa$ term is the one-shot binary search, charging
+$O(d)$ per lexicographic tuple comparison; $d\,t$ is the per-candidate
+intersection cost; $d\,r$ is the per-result yield cost. This matches
+the $O(d\log\kappa + d\,t)$ bound stated in
+Section~\ref{section:operations-restriction} (with $r\le t$ absorbed
+into the $d\,t$ term) and additionally exposes the yield term that the
+select benchmark below isolates.
 
 To validate this decomposition we instrumented the same seven baselines
 used for \texttt{at}/\texttt{pos} (\textsc{Grid}, \textsc{SortedPoints},
@@ -2188,6 +2271,25 @@ binary, when compiled without \texttt{NDEBUG} (i.e.\ as exercised by
 queries on a $16\!\times\!16\!\times\!16$ grid at startup and checks
 that all ten implementations yield identical point sets after
 enumeration.
+
+\paragraph{What the \texttt{restrict} numbers actually compare.}
+The \texttt{restrict} pipeline reported here is, for every
+implementation including the non-IPT baselines, the same two-stage
+recipe \emph{select-then-IPT-rebuild}: the implementation's
+\texttt{select} stream is fed into the IPT from-range constructor and
+the resulting sub-IPT is the measured output. This is intentional, and
+matches the IPT's native restriction operator
+$\textsc{restrict}(Q) = \mathrm{IPT}(\textsc{select}(Q))$ from
+Section~\ref{section:operations-restriction}; for the non-IPT baselines
+it is \emph{not} a measurement of any layout-native restriction
+operator. \textsc{SortedPoints}, \textsc{LexRun}, \textsc{RowCSR-k\(*\)},
+\textsc{DenseBitset} and \textsc{BlockBitmap} are not closed under
+their own restriction in this representation: they would naturally
+produce a smaller instance of themselves, not an IPT. The numbers
+therefore quantify ``how fast can each layout's selection feed an IPT
+sub-domain rebuild'', which is the shared workload the IPT advertises;
+they should not be read as a comparison of layout-native restriction
+operators.
 
 The full 20-platform sweep emits \texttt{select\_d*} and
 \texttt{restrict\_d*} measurement lines (for $d \in \{0.001, 0.01, 0.1,
@@ -2222,6 +2324,60 @@ constant-factor from-range rebuild on top of \texttt{select}.
 The gaps widen further at smaller $d$ (where the IPT's binary search
 and skip over empty cuboids dominate the entire pipeline) and shrink
 at $d = 1$ as every implementation becomes yield-bound.
+
+\subsection{Higher-Dimensional Stress: a 5D Multiple-Survey Scenario}
+\label{section:results-stress-5d}
+
+To check that the IPT properties survive at higher~$d$ and at a point
+count comparable to a production seismic geometry, the artifact
+includes a fifth, opt-in stress scenario \texttt{multiple-survey-9-5d}
+(executed by \texttt{run/benchmark-stress.sh}). It places a $3\times 4$
+arrangement of twelve 3D sub-surveys, each carried by its own strides
+in the inline/crossline/offset axes and each expanded by a fixed
+$125\times 80$ azimuth--time block, into a bounding grid of
+$47\times 44\times 41\times 125\times 80$. After deduplication of the
+overlap between neighboring sub-surveys this yields $92\,260\,000$
+unique 5D points. We collected this scenario on the same 18 of the 20
+platform/compiler combinations that supplied a stress run with the
+default \texttt{c0r1e1l0} cache configuration. The aggregate appears
+in Table~\ref{table:stress-5d-summary}.
+
+\begin{table}[ht]
+\centering
+\caption{Aggregate \texttt{multiple-survey-9-5d} measurements
+  (greedy-plus-merge, \texttt{c0r1e1l0}, geometric mean across the 18
+  stress platforms; bracketed range is the 10th--90th percentile).
+  Cuboid count and IPT byte size are deterministic functions of the
+  input and therefore platform-independent.}
+\Description{Table of aggregate measurements for the
+  multiple-survey-9-5d 5D stress scenario, summarising construction
+  rate, pos and at throughput, and select/restrict latency at two
+  density levels across 18 platform/compiler combinations.}
+\label{table:stress-5d-summary}
+\input{generated/stress-summary.tex}
+\end{table}
+
+Three observations carry over from the lower-dimensional results.
+First, the cuboid count is $\kappa = 2154$, so the IPT metadata fits in
+$379\,104$ bytes ($\approx 370\,$KiB) for $9.2\times 10^7$ points; the
+IPT therefore stores about $4\,300$ points per cuboid record on this
+geometry, well below $N$ and consistent with the structured regime
+identified in Section~\ref{section:results-summary}. Second, the
+\texttt{at}/\texttt{pos} gap (\texttt{at\_random} faster than
+\texttt{pos\_random}) persists at $d=5$, in line with the per-query
+analysis. Third, \texttt{select} and \texttt{restrict} stay in the
+$10$--$10^3\,\mu$s range up to a $d=0.1$ relative window even at this
+size, confirming that the cuboid-algebra path scales with the structure
+of the data rather than with $N$.
+
+The IPT-only stress configuration deliberately omits the
+non-IPT baselines: at this size and dimensionality, several of them
+exceed available memory or do not finish within the per-scenario
+budget. The numbers above therefore quantify the IPT's behavior at
+$d=5$ and are not a head-to-head comparison; they should be read as
+evidence that the structured-regime properties demonstrated in
+Sections~\ref{section:results-pos}--\ref{section:results-selection}
+do not collapse when $d$ and $N$ are pushed simultaneously.
 
 \subsection{Summary of Empirical Regimes}
 \label{section:results-summary}
@@ -2306,6 +2462,76 @@ show the main trade-offs, but it does not replace application studies
 on production geometries. Real-world workloads may expose additional
 construction patterns, especially outside the geoscience setting.
 
+\paragraph{Dynamic and AMR settings.}
+The flat IPT is constructed once from sorted input and is read-only
+afterward. In dynamic or adaptive-mesh-refinement (AMR) settings where
+the topology changes frequently, the relevant cost is not just one
+construction but the amortized cost of repeated re-builds. The linear
+$O(dN)$ construction (Section~\ref{section:results-construct}) keeps a
+full re-build practical when topology changes happen on a much coarser
+time scale than queries, but it is not by itself a streaming or
+incremental update procedure. A useful incremental variant would have
+to amortize prefix-sum recomputation and cuboid-list editing across
+small local edits; this is left to future work and is the most
+prominent gap between the present design and a fully dynamic spatial
+index.
+
+\paragraph{Practical $d$-scaling.}
+The asymptotic costs $O(d+\log\kappa)$ for \texttt{at} and
+$O(d\log\kappa)$ for \texttt{pos} are linear in~$d$, but the
+constant-factor picture changes as $d$ grows beyond the dimensions
+covered here ($d\le 3$). Each cuboid record stores $O(d)$ ruler
+fields, so for fixed~$\kappa$ the metadata footprint per cuboid grows
+linearly with~$d$ and an entire cuboid record stops fitting in a
+single cache line at modest $d$ (roughly $d\gtrsim 4$ on the platforms
+studied here, depending on cache configuration). Beyond that point the
+binary search over $\operatorname{lub}(C_h)$ pays an additional cache
+miss per comparison, and the practical \texttt{pos} cost is closer to
+$O(d\log\kappa)$ memory accesses than to $O(d\log\kappa)$ register
+operations. The structural advantages of the flat IPT (exact geometry,
+geometric restriction, pointer-free layout) all remain, but the
+benchmarked throughput numbers should not be extrapolated unchanged to
+high-dimensional settings.
+
+\subsection{Reproducibility}
+\label{section:reproducibility}
+
+The full benchmark and paper-build pipeline is included with the
+submission and is also published as an open-source artifact under the
+license stated in the \texttt{LICENSE} file. The top-level
+\texttt{Makefile} drives the entire pipeline:
+\begin{itemize}
+  \item \texttt{make verify} compiles all 16 cache-flag combinations
+    with assertions enabled and runs the corner-steal and
+    cross-implementation selection verifiers on a reduced scenario
+    subset.
+  \item \texttt{make benchmark} runs the cache-dependent IPT
+    implementations under all 16 configurations and the
+    cache-independent baselines once per platform; output goes to
+    \texttt{results/<platform>/}.
+  \item \texttt{make benchmark-stress} runs the
+    \texttt{multiple-survey-9-5d} 5D stress scenario at the
+    \texttt{c0r1e1l0} default
+    (Section~\ref{section:results-stress-5d}).
+  \item \texttt{make plots} regenerates every figure in this paper
+    by compiling the per-figure extractors in \texttt{plot/*.cpp}, running
+    them over \texttt{results/}, and invoking gnuplot on the
+    \texttt{plot/*.gp} scripts.
+  \item \texttt{make paper} re-runs \texttt{pdflatex} and
+    \texttt{bibtex} on \texttt{IPT.tex}.
+\end{itemize}
+The platforms used in this paper (Table~\ref{table:platforms}) are
+listed by OS, kernel, CPU, and compiler; each result directory under
+\texttt{results/} encodes the same identifying string so that an
+independent re-run on the same hardware/compiler combination produces
+a directly comparable subdirectory. Compilers are pinned by version in
+those directory names. The header-only IPT library lives in
+\texttt{ipt/}; the benchmark driver is the single translation unit
+\texttt{benchmark.cpp}; the per-figure extractors and gnuplot scripts
+are colocated in \texttt{plot/}; aggregated tabular outputs land in
+\texttt{generated/}. Citation metadata for the artifact is provided in
+\texttt{CITATION.cff}.
+
 \section{Conclusion}
 \label{section:conclusion}
 
@@ -2324,11 +2550,21 @@ systems-oriented extension of Horner-style rank/unrank for the goals of
 this paper.
 
 The experiments show that the approach is most effective when
-irregular data retains substantial cuboid structure. In that regime the
+irregular data retains substantial cuboid structure and when the
+dominant query is \texttt{pos}-heavy, selection-heavy, or
+restriction-heavy. In that regime the
 IPT keeps about $14\%$ of the sorted-points memory on the tested
 structured survey layouts, improves \texttt{pos} by about $2.33\times$
-on those layouts, and also preserves the regular-grid case closely with
-the \texttt{c0r1e1l0} cache configuration.
+on those layouts, and offers a closed-form geometric restriction
+operator. It also preserves the regular-grid case closely with
+the \texttt{c0r1e1l0} cache configuration. On \texttt{at}-heavy
+traversals of the same structured layouts the IPT is slower than a
+sorted-points table; the experiments quantify this gap rather than
+claim a uniform speedup. Across the 61 organic workload shapes the
+proven-optimal greedy-plus-combine constructor coincided exactly with
+the simpler greedy-plus-merge constructor; its practical role in this
+benchmark suite is therefore correctness insurance for the corner-steal
+family, not additional measured speed or compression.
 The cache-sweep results confirm that \texttt{c0r1e1l1} achieves the
 best pure query performance, but \texttt{c0r1e1l0} is the more broadly
 usable default because it caps metadata overhead at $40\%$ while

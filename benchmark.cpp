@@ -31,6 +31,7 @@
 #include <span>
 #include <stdexcept>
 #include <string_view>
+#include <third_party/CRoaring/roaring.hh>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -1019,48 +1020,37 @@ namespace
     // Largest power of 2 such that tile_extent^D fits in one 64-bit word.
     // D=1: 64, D=2: 8, D=3: 4, D=6: 2, D>6: 1.
     static constexpr Index tile_extent
-      { std::invoke
-        ( [] () constexpr noexcept -> Index
+      { [] () constexpr noexcept -> Index
+        {
+          auto e {Index {64}};
+          while (true)
           {
-            auto e {Index {64}};
-            while (true)
+            auto vol {Index {1}};
+            for (std::size_t k {0}; k < D; ++k)
             {
-              auto const vol
-                { std::ranges::fold_left
-                  ( std::views::iota (std::size_t {0}, D)
-                  , Index {1}
-                  , [e] (auto product, auto) constexpr noexcept
-                    {
-                      return product * e;
-                    }
-                  )
-                };
-
-              if (vol <= 64)
-              {
-                return e;
-              }
-
-              e /= 2;
+              vol *= e;
             }
+
+            if (vol <= 64)
+            {
+              return e;
+            }
+
+            e /= 2;
           }
-        )
+        } ()
       };
 
     static constexpr Index tile_volume
-      { std::invoke
-        ( [] () constexpr noexcept -> Index
+      { [] () constexpr noexcept -> Index
+        {
+          auto vol {Index {1}};
+          for (std::size_t k {0}; k < D; ++k)
           {
-            return std::ranges::fold_left
-              ( std::views::iota (std::size_t {0}, D)
-              , Index {1}
-              , [] (auto product, auto) constexpr noexcept
-                {
-                  return product * tile_extent;
-                }
-              );
+            vol *= tile_extent;
           }
-        )
+          return vol;
+        } ()
       };
 
     [[nodiscard]] explicit BlockBitmap (Grid<D> grid)
@@ -1911,6 +1901,120 @@ namespace
 
 namespace
 {
+  using namespace ipt;
+
+  // External baseline: Roaring bitmap (vendored CRoaring v4.6.1, see
+  // third_party/CRoaring/). Linearises points through the bounding Grid
+  // exactly as DenseBitset and BlockBitmap do, and stores the resulting
+  // 64-bit ids in a Roaring64Map. Selected as the mature open-source
+  // compressed-bitmap baseline; uses the 64-bit map so that bounding
+  // grids larger than 2^32 are supported.
+  template<std::size_t D>
+    struct Roaring
+  {
+    [[nodiscard]] explicit Roaring (Grid<D> grid) noexcept
+      : _grid {grid}
+    {}
+
+    [[nodiscard]] static constexpr auto name() noexcept
+    {
+      return "roaring";
+    }
+
+    auto add (Point<D> const& point) noexcept -> void
+    {
+      assert (_point_count < _grid.size());
+      assert (!_last_added || *_last_added < point);
+
+      auto const linear_index {_grid.UNCHECKED_pos (point)};
+
+      _bitmap.add (static_cast<std::uint64_t> (linear_index));
+      _last_added = point;
+      _point_count += 1;
+    }
+
+    [[nodiscard]] auto build() && noexcept -> Roaring
+    {
+      _bitmap.runOptimize();
+      _bitmap.shrinkToFit();
+      return std::move (*this);
+    }
+
+    [[nodiscard]] auto size() const noexcept -> Index
+    {
+      return _point_count;
+    }
+
+    [[nodiscard]] auto bytes() const noexcept -> std::size_t
+    {
+      return sizeof (*this) + _bitmap.getSizeInBytes (true);
+    }
+
+    [[nodiscard]] auto at (Index index) const -> Point<D>
+    {
+      if (!(index < size()))
+      {
+        throw std::out_of_range {"Roaring::at: index out of range"};
+      }
+
+      auto element {std::uint64_t {0}};
+
+      if (!_bitmap.select (static_cast<std::uint64_t> (index), &element))
+      {
+        throw std::out_of_range {"Roaring::at: index out of range"};
+      }
+
+      return _grid.at (static_cast<Index> (element));
+    }
+
+    [[nodiscard]] auto pos (Point<D> point) const -> Index
+    {
+      auto const linear_index {_grid.pos (point)};
+      auto const offset
+        { _bitmap.getIndex (static_cast<std::uint64_t> (linear_index))
+        };
+
+      if (offset < 0)
+      {
+        throw std::out_of_range {"Roaring::pos: point out of range"};
+      }
+
+      return static_cast<Index> (offset);
+    }
+
+    [[nodiscard]] auto select
+      ( ipt::Cuboid<D> query
+      ) const -> std::generator<ipt::Cuboid<D>>
+    {
+      auto const grid_cuboid {to_ipt_cuboid (_grid)};
+      auto const intersection {grid_cuboid.intersect (query)};
+
+      if (!intersection)
+      {
+        co_return;
+      }
+
+      for (auto const& point : enumerate (*intersection))
+      {
+        auto const linear {_grid.UNCHECKED_pos (point)};
+
+        if (_bitmap.contains (static_cast<std::uint64_t> (linear)))
+        {
+          co_yield singleton_cuboid (point);
+        }
+      }
+    }
+
+  private:
+    Grid<D> _grid;
+    roaring::Roaring64Map _bitmap;
+    Index _point_count {0};
+    std::optional<Point<D>> _last_added;
+  };
+}
+
+namespace
+{
   using Clock = std::chrono::steady_clock;
 
   using namespace ipt;
@@ -2728,6 +2832,9 @@ namespace
     auto const run_block_bitmap
       { selected_algorithm (BlockBitmap<D>::name())
       };
+    auto const run_roaring
+      { selected_algorithm (Roaring<D>::name())
+      };
     auto const run_lex_run
       { selected_algorithm (LexRun<D>::name())
       };
@@ -2749,6 +2856,7 @@ namespace
        && !run_sorted_points
        && !run_dense_bitset
        && !run_block_bitmap
+       && !run_roaring
        && !run_lex_run
        && !run_row_csr_k1
        && !run_row_csr_km
@@ -2935,6 +3043,35 @@ namespace
         );
       run_select_sweep
         (context, BlockBitmap<D>::name(), block_bitmap.queryable, sink);
+    }
+
+    if (run_roaring)
+    {
+      auto const roaring_baseline
+        { TimedBuild<D, Roaring<D>>
+          { data.points()
+          , Roaring<D> {context.grid}
+          }
+        };
+
+      std::print ("{} {}\n", Measurement<D> {context, Roaring<D>::name(), "construct"}, roaring_baseline.construction);
+      std::print ("{} value={}\n", Measurement<D> {context, Roaring<D>::name(), "roaring_bytes"}, roaring_baseline.queryable.bytes());
+      std::print
+        ( "{}"
+        , TimedQueries
+          { context
+          , Roaring<D>::name()
+          , sink
+          , roaring_baseline.queryable
+          , data.points()
+          , point_sample
+          , all_point_sample
+          , index_sample
+          , all_index_sample
+          }
+        );
+      run_select_sweep
+        (context, Roaring<D>::name(), roaring_baseline.queryable, sink);
     }
 
     if (run_lex_run)
@@ -3843,6 +3980,10 @@ namespace verify
     for (auto const& point : points) { block_bitmap_builder.add (point); }
     auto block_bitmap_built {std::move (block_bitmap_builder).build()};
 
+    auto roaring_builder {Roaring<3> {grid}};
+    for (auto const& point : points) { roaring_builder.add (point); }
+    auto roaring_built {std::move (roaring_builder).build()};
+
     auto lex_run_builder {LexRun<3> {}};
     for (auto const& point : points) { lex_run_builder.add (point); }
     auto lex_run_built {std::move (lex_run_builder).build()};
@@ -3922,6 +4063,7 @@ namespace verify
 
       any_failed |= !check_one ("dense-bitset", dense_bitset_built, query, reference, query_index);
       any_failed |= !check_one ("block-bitmap", block_bitmap_built, query, reference, query_index);
+      any_failed |= !check_one ("roaring", roaring_built, query, reference, query_index);
       any_failed |= !check_one ("lex-run", lex_run_built, query, reference, query_index);
       any_failed |= !check_one ("row-csr-k1", row_csr_k1_built, query, reference, query_index);
       any_failed |= !check_one ("row-csr-k2", row_csr_k2_built, query, reference, query_index);

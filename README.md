@@ -128,10 +128,18 @@ assertions and emits two result groups:
   `multiple-survey-{2,3,4,5,6,7,8,10,11}`.
 - `cache-independent-<config>.txt` contains the cache-independent
   baselines measured once with the reference cache configuration
-  (`c0r0e0l0` by default). The heavy bitmap baselines are restricted to
-  the smaller structured scenarios `multiple-survey-{2,3,4,5,6,7,8}` in
-  the default suite and use a lower default `pos_all` / `at_all` cap of
-  10000 queries.
+  (`c0r0e0l0` by default). The heavy baselines (`dense-bitset`,
+  `block-bitmap`, and the vendored `roaring` Roaring-bitmap baseline) are
+  restricted to the smaller structured scenarios
+  `multiple-survey-{2,3,4,5,6,7,8}` in the default suite and use a lower
+  default `pos_all` / `at_all` cap of 10000 queries.
+
+The `roaring` baseline is implemented on top of CRoaring v4.6.1, which
+is vendored unmodified under `third_party/CRoaring/` (dual Apache-2.0 /
+MIT licensed; see `third_party/CRoaring/LICENSE`). The `benchmark.cpp`
+build commands compile `third_party/CRoaring/roaring.c` together with
+`benchmark.cpp` in a single invocation; no system installation of
+CRoaring is required.
 
 `make benchmark-stress` is opt-in and runs only the large structured
 stress scenarios `multiple-survey-9-5d` and

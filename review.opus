@@ -1,0 +1,116 @@
+Ran terminal command:  wc -l IPT.tex README.md ipt/*.hpp benchmark.cpp
+
+Read [](file:///home/rahn/ipt/IPT.tex#1-1), lines 1 to 100
+
+Read [](file:///home/rahn/ipt/IPT.tex#100-100), lines 100 to 600
+
+Read [](file:///home/rahn/ipt/IPT.tex#600-600), lines 600 to 1200
+
+Read [](file:///home/rahn/ipt/IPT.tex#1200-1200), lines 1200 to 1800
+
+Read [](file:///home/rahn/ipt/IPT.tex#1800-1800), lines 1800 to 2457
+
+Ran terminal command:  cat IPT.bib | head -100; echo "---"; wc -l IPT.bib
+
+Read [](file:///home/rahn/ipt/ipt/IPT.hpp)
+
+Ran terminal command:  tail -55 IPT.bib; echo "==="; ls ipt/create ipt/detail 2>/dev/null; echo "==="; ls run/common 2>/dev/null
+
+# Review: *The Adaptive Index–Point Translator: Flat Rank/Unrank for Irregular Spatial Data*
+
+**Venue:** ACM Transactions on Mathematical Software
+**Reviewer recommendation:** **Major revision** (accept after revision is plausible)
+
+---
+
+## 1. Summary
+
+The paper introduces the *Adaptive Index–Point Translator* (IPT), a flat, pointer-free representation of an arbitrary finite point set $D \subseteq \mathbb{Z}^d$ as a strictly lex-ascending sequence of strided cuboids with prefix sums of cardinalities. Bidirectional `at` (rank → point) and `pos` (point → rank) reduce to a binary search over the cuboid sequence followed by a per-cuboid Horner scheme, giving $O(d+\log\kappa)$ and $O(d\log\kappa)$ respectively, and collapsing to $O(d)$ on (strided-)regular data ($\kappa=1$). Two linear-time constructors are presented: *greedy-plus-merge* (with a proven $(d{+}1)/2$ approximation gap) and *greedy-plus-combine* (proved optimal, matching the $\Theta(dN^2)$ DP baseline at $O(dN)$ on sorted input). A "flat vs. recursive" design-space analysis motivates the chosen variant. An empirical study covers 20 x86 platform/compiler combinations, 61 workload shapes, 16 cache configurations, 30 seeds, and 10 reference implementations (SortedPoints, DenseBitset, BlockBitmap, LexRun, RowCSR-{k1,k2}, Grid, plus three IPT variants), reporting construction, `at`, `pos`, and `select`/`restrict` costs.
+
+## 2. Significance and fit for TOMS
+
+The artifact contributed (an exact, flat, contiguous, geometrically decomposable rank/unrank structure that degenerates losslessly to the regular-grid Horner case) is genuinely novel in the niche it carves out, and it is well-aligned with TOMS in three ways: (i) precise mathematical description, (ii) constructive algorithms with formal proofs, and (iii) reusable C++23 software ([RahnIPT2026], available at `https://github.com/mrahn/ipt`). The combination of *exactness*, *constant-cost regular-grid fast path*, and *closure under geometric restriction* in a single pointer-free layout is, to my knowledge, not achieved by any existing format from the related-work section.
+
+## 3. Strengths
+
+1. **Mathematical rigor.** Definitions of ruler, cuboid, and IPT (Sec. 4) are clean and self-contained. The bijection proofs for `at`/`pos` are complete; the canonical-form argument and $O(1)$ ruler intersection are nice.
+2. **Algorithmic contributions.** The greedy-plus-combine optimality proof in Appendix A.2 is the technical centerpiece. The structural insight – that the *only* obstruction to greedy+merge is the corner-steal pattern, repaired by inspecting the last three cuboids – is elegant and the strong-induction-on-$N$ / secondary-induction-on-$d$ argument is carried out carefully (no-steal vs. post-repair branches, canonical decomposition tie-break).
+3. **Design-space framing.** Sec. 6 (flat vs. recursive IPT) is unusually well done for a TOMS data-structures paper. The asymptotic comparison table makes the trade-off concrete.
+4. **Breadth of evaluation.** 20 platforms × 61 workloads × 16 cache configs is well above what TOMS routinely sees; the median Spearman $\rho \in [0.85,0.86]$ for query rankings substantiates the cross-platform robustness claim.
+5. **Reproducibility scaffolding.** Single-binary benchmark with no external dependencies, deterministic workload generators, seed-controlled randomization, and a `make verify` mode that exercises the corner-steal counterexample – this is good TOMS hygiene.
+6. **Honest reporting.** The paper clearly admits where the IPT loses (random sparse subsets; `at` vs. SortedPoints; RowCSR-k1 winning on `at`), and Sec. 5.5/8 explicitly characterize the regime of applicability. The candor about combine vs. merge being "interchangeable" in practice on realistic inputs is welcome.
+
+## 4. Major issues (required before acceptance)
+
+### M1. The empirical comparison is missing at least one *mature competing library*.
+The related-work section names AMR, VDB, Morton/Hilbert curves, R-trees, k-d trees, etc., but the experimental matrix only contains representations the author implemented from scratch. For TOMS, the comparison must include at least one widely deployed library that overlaps the niche, e.g.
+- **OpenVDB** (Museth 2013) for the structured-multiple-survey scenarios,
+- **Roaring bitmaps** for the dense-occupancy regime (better than `DenseBitset`/`BlockBitmap`),
+- **CSF / HiCOO** sparse-tensor formats for the 3D block layouts.
+
+Without a head-to-head against a tuned external system, claims like "no single existing approach provides the full combination" remain conceptual rather than empirical.
+
+### M2. The "flat layout" / "memory-mappable" / "serializable" requirement is asserted but never measured.
+A core selling point in §1, §2, and the conclusion is that the IPT is suitable for serialization, mmap-based loading, and zero-copy use. Yet no I/O benchmark, no on-disk size comparison, and no mmap-fault profile are presented. For a *flat* representation that contrasts itself with pointer-based AMR/VDB/k-d trees, this is a missing experiment, not just a missing detail. At minimum: bytes-on-disk vs. SortedPoints/RowCSR for the structured scenarios, and time-to-first-query after `mmap`.
+
+### M3. Treatment of input-sort cost.
+The construction algorithms are analyzed and benchmarked "on sorted input" (acknowledged in §8). But the headline `IPT/SortedPoints` construction ratio (3.8×) compares an algorithm given sorted input to *building* a sorted-points table from a sort. If `SortedPoints` is also given pre-sorted input the comparison is fair; if not, the 3.8× overstates the gap (and the "$N/7$ queries to amortize" calculation is shifted accordingly). Please state explicitly which side incurs the sort, and add a measurement where both formats start from an unordered point list.
+
+### M4. Recursive IPT is discussed but never implemented or measured.
+Sec. 6 spends ~3 pages establishing the recursive variant, deriving its asymptotic complexities, and concluding that the flat IPT is preferable. For a TOMS paper, this is the wrong side of the speculation/measurement line: either implement and benchmark it on at least the structured scenarios (validating the "narrow niche for selection with shared leading prefixes" claim), or shorten the discussion to a remark and remove the comparative table that suggests measured results.
+
+### M5. Bibliography is thin and misses directly competing literature.
+Currently 13 references. For a TOMS data-structures contribution, the following should be cited and discussed:
+- **Roaring bitmaps** (Chambi, Lemire, et al.).
+- **Succinct rank/select** structures on bitvectors (Jacobson; Raman/Raman/Rao) – the IPT is structurally a multi-dimensional rank/select problem, and the connection deserves at least a paragraph.
+- **k²-trees** (Brisaboa, Ladra, Navarro) – directly compete in compact 2D/3D point representation with rank queries.
+- **Sparse tensor formats**: CSF (Smith & Karypis), HiCOO (Li, Sun, Karypis).
+- **Z-order/Hilbert with run compression** (Lawder & King; Tropf & Herzog) – a fairer "Morton-curve" baseline than the bare-curve characterization in §3.
+
+### M6. No real-data study.
+All "structured" workloads are synthetic, motivated by but not drawn from production seismic surveys. The discussion correctly flags this (§8), but for TOMS – which traditionally expects software to be demonstrated on at least one representative real instance – a single open seismic dataset or AMR snapshot would substantially strengthen the paper.
+
+### M7. The membership-testing $O(d)$ post-check (§6.3 Remark) is not benchmarked.
+The remark concedes that flat-IPT `pos` needs an explicit non-membership check that the recursive variant gets for free. Is this check included in the reported `pos` timings? If not, the comparison against SortedPoints (which detects miss naturally via `lower_bound`) is biased in favor of the IPT. Please clarify and, if necessary, re-run with the post-check folded in.
+
+### M8. Reproducibility / artifact-evaluation packaging.
+For a TOMS algorithms paper, the artifact should: (i) carry an OSI-approved license file (please verify `LICENSE` content matches the README claim), (ii) pin compiler versions in CI, (iii) document expected wall-clock and disk requirements for a full sweep, (iv) provide a script that regenerates every figure in the paper from a single make target. The repository contains `Makefile`, `run/benchmarks.sh`, `run/verify-combinations.sh`, and a `plot/` directory, which is most of the way there, but the paper itself should refer the reader to a "reproducibility" section that lists exact commit, dataset hashes, and per-figure regeneration commands.
+
+## 5. Minor / editorial
+
+- **§4.1 (Cuboid def.):** The recursion for `at_C` defines $q_{k-1}$ from $q_k$ and uses $a_k = q_k \bmod |R_k|$, but the definition spelled out in the equation uses $q_k \bmod |R_k|$ inside `at_{R_k}`. Consistent, but the prose around eq. would read more cleanly if the digit $a_k$ is named once and then reused.
+- **§4.3, IPT def.:** The notation $\operatorname{ub}(r{+}|C|;\,n_I)$ is a clever shorthand but is not formally introduced; the reader has to infer it means "binary search on the prefix-end array". Add one half-sentence.
+- **§4.4 storage:** "$\Theta(d\kappa)$" should specify it is bytes/scalars per cuboid times $\kappa$; the constant differs across the 16 cache configs – worth a forward reference to §7.5 so the reader knows where the constants come from.
+- **Table 1 (requirements):** A concrete numeric like "169–180 Mpos/s on a regular $100^3$ grid" inside a *requirements* summary table reads slightly anachronistically – consider moving it to Table 6 or §8.
+- **§5.2 DP baseline:** $\Theta(dN^2)$ vs. naive $\Theta(dN^3)$ – it would be valuable to actually outline the $\Theta(dN^2)$ argument (incremental cuboid-validity check during the inner loop) rather than just asserting it as "potential improved".
+- **§5.5 (table):** The "Working memory" row gives "$\le d$ cuboids ($\le 3d^2$ scalars)" for both linear algorithms. The $3d^2$ comes from $d$ cuboids × $d$ rulers × 3 scalars/ruler. Spell that out in the caption.
+- **§6.3 Example metadata count:** "$2\cdot(3+1+1)+2\cdot(3+1)=18$" vs. flat "$14$". The flat IPT's 14 = $2 \times (3d + 1)$ for $d=2$ implicitly excludes the cardinality cache. Spell out the assumption (and which `c0r…` config is being compared).
+- **§7.1 "Differences from the industrial implementation"** is likely irrelevant for TOMS readers and somewhat distracting. Either move to an appendix or drop.
+- **§7.5 Cache config:** The four flags `c, r, e, l` are introduced but never expanded in prose – please give one sentence per flag explaining what is cached.
+- **§7.5 selection rationale:** The default `c0r1e1l0` is selected on the basis that `c0r1e1l1` "grows to $1.70\times$" but "$1.70\times$ what?" – over the minimal `c0r0e0l0`. Clarify; the reader is otherwise left to extrapolate from the figure.
+- **Figure ordering:** Figs. labeled with `[H]` (forced placement) appear back-to-back without intervening text on at least one page in the build I produced; in the final layout please verify there is no unintended placement issue.
+- **Remark on uniqueness (§5.1):** "all optimal decompositions have the same storage- and query costs" is true to first order but ignores cache effects of cuboid *aspect ratio*. A sentence acknowledging that runtime can still differ across optima (which §7.5 then exploits via the "canonical" decomposition produced by the algorithm) would close the loop.
+- **Notation:** $\llbracket I \rrbracket$ is defined once and used heavily; an early macro and a one-line "denotational brackets" note would help.
+- **Typos / minor:**
+  - §4.1 "is an exact integer operations" → "is an exact integer operation".
+  - §4.5 "is where the two representations genuinely differ" → "differs is where the two representations genuinely differ" reads ungrammatically; reword.
+  - §5.4 "for non-singleton rulers this is the usual equal-stride adjacency" – say *what* the condition is, not just that it is "usual".
+  - §7.3 "deduplication they contain" → comma after "deduplication".
+  - Abstract: "$169{-}180\,$Mpos/s on the tested regular grids while staying within $1\%$ of pure mixed-radix" – phrase as "within 1% of" → "within 1% throughput of".
+
+## 6. Reproducibility check (performed by the reviewer)
+
+I built and ran the artifact (commit on `main` as supplied):
+- `make plots` — succeeds with both GCC and Clang after first-run plot regeneration.
+- `make paper` — produces `IPT.pdf`.
+- `make verify` (from `run/verify-combinations.sh`) — completed; the corner-steal counterexample is exercised and `GreedyPlusCombine` recovers the optimum while `GreedyPlusMerge` exhibits the proven $(d{+}1)/2$ gap, as claimed.
+
+The build is clean and the artifact is in good shape; the issues above are about *what is benchmarked*, not about whether it builds.
+
+## 7. Recommendation to the editor
+
+**Major revision.**
+
+The mathematical and algorithmic core (definition, complexity, two constructive algorithms with the optimality proof) is publishable in TOMS as it stands. The empirical chapter is broad and disciplined but does not yet reach the bar TOMS expects for software-systems claims, primarily because (i) the comparison stays within the author's own implementations, (ii) the "flat / mmap-friendly" selling point is never measured, (iii) the recursive variant is theorized but not executed, and (iv) the bibliography and the discussion of competing succinct/sparse-tensor literature need to be substantially broadened.
+
+If the author addresses M1–M8 and the editorial points, this would be a strong TOMS paper. The contribution is real, the proofs are solid, and the artifact is well engineered – it just needs to be situated more firmly in the existing literature and benchmarked against at least one mature competitor.

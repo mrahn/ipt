@@ -1,0 +1,98 @@
+**Must Do**
+- [DONE 2026-04-29] Reconcile the selection complexity statement between IPT.tex and IPT.tex. Pick one worst-case form and use it everywhere.
+  Unified to $O(d\log\kappa + d\,t + d\,r)$; restored the missing $d$ factor on the binary-search term in section:results-selection (line ~2167) and clarified that the theory-section bound $O(d\log\kappa + d\,t)$ absorbs $r\le t$ into the $d\,t$ term.
+- [DONE 2026-04-29] Pull the sorted-input assumption forward in the abstract, construction results, discussion, and conclusion: IPT.tex, IPT.tex, IPT.tex, IPT.tex. Rewrite the N/7 amortization claim accordingly.
+  Abstract now says "on lexicographically sorted input" and qualifies the benchmark numbers with "all measured from sorted input". Construction-results subsection gained a leading paragraph stating both IPT and SortedPoints are timed from sorted input, that the build-time ratio is invariant under any shared sort, and the N/7 sentence is now conditioned on the sorted-input assumption with an explicit note about how the amortization point shifts when a sort must be charged. Discussion and conclusion already state the precondition.
+- [DONE 2026-04-29] Reframe the selection/restriction benchmark in IPT.tex and IPT.tex so it is explicit that non-IPT baselines are compared on selection plus IPT rebuild from emitted fragments, not on their own native restriction operators.
+  Added new paragraph "What the restrict numbers actually compare" in section:results-selection making the select+IPT-rebuild comparison explicit for ALL non-IPT implementations.
+- [DONE 2026-04-29] Tone the introduction and conclusion down to the regime actually supported by the data: structured workloads with low κ relative to N, especially pos-heavy and selection/restriction-heavy use. Surface the at tradeoff earlier in IPT.tex and IPT.tex.
+  Added a new "Effective regime" paragraph at the end of the intro and rewrote the corresponding conclusion paragraph: foregrounds pos-heavy / selection-restriction-heavy structured-low-κ workloads, surfaces the at penalty on fragmented inputs, and softens the optimality framing (greedy-plus-combine = greedy-plus-merge on all 61 organic shapes; combine = correctness insurance).
+- [DONE 2026-04-29] Expand related work and bibliography in IPT.tex and IPT.bib.
+  Added paragraphs in section:existing on Roaring bitmaps, succinct rank/select + k²-trees, higher-dimensional sparse tensor formats (CSF, HiCOO), and SFC-with-run-compression citations. Bib entries added: ChambiLemireKaserGodin2016, LemireBoyttsovKurz2018, Jacobson1989, RamanRamanRao2007, BrisaboaLadraNavarro2014, SmithKarypis2015, LiSunVuduc2018, LawderKing2001, TropfHerzog1981.
+- [DONE 2026-04-29] Add a short reproducibility subsection in IPT.tex that points to the artifact scaffolding already present in README.md, Makefile, CITATION.cff, and LICENSE.
+  New section:reproducibility at the end of the Discussion lists make verify / make benchmark / make benchmark-stress / make plots / make paper, ties result subdirectory naming to the platform table for independent re-runs, and points at LICENSE / CITATION.cff. LICENSE confirmed BSD 3-Clause.
+- [DONE 2026-04-29] Do one editorial cleanup pass for the minor comments: cache-flag prose, notation, table captions, the industrial-implementation paragraph, and the listed typos.
+  Cache-flag prose in section:selection now expands c/r/e/l one phrase each. Removed the anachronistic "180 Mpos/s" / "13.8% memory" rows from table:requirements-summary; cited section:results-kappa instead. Tightened §6.3 metadata example to make the c0r0e0l0 minimal-cache assumption explicit and exhibit the 14 = 2·(2·3+1). Shortened and rebadged the §7.1 "industrial implementation" paragraph as "Benchmark vs. industrial implementation". Reworded the §5 merge-condition sentence to spell out the equal-stride condition. Fixed typos: "is an exact integer operations" → "operation"; "differ is where … differ" → single "is where the two representations genuinely differ"; "deduplication they contain" → "deduplication, they contain"; "within $1\%$ of pure mixed-radix" → "within $1\%$ throughput of pure mixed-radix" (both abstract and selection text); "$1.70\times$ of c0r0e0l0" → "$1.70\times$ the size of the minimal-footprint c0r0e0l0 configuration".
+
+**Experiments To Add**
+- Add one unordered-input end-to-end construction benchmark. This directly answers the sort-cost objection and makes the amortization claim honest.
+- [DONE 2026-04-29] Add one reported 5D or higher-d result. The cheapest path is to surface the existing stress route in benchmark-stress.sh and align it with the workload framing in IPT.tex.
+  Added new section:results-stress-5d in IPT.tex (table:stress-5d-summary). Aggregates the multiple-survey-9-5d stress scenario across all 18 platforms that supplied a c0r1e1l0 stress run: bounding grid 47×44×41×125×80, 92 260 000 unique points, κ=2154 cuboids, IPT metadata 379 104 bytes; geometric-mean construct 33.2 Mpoint/s, pos_random 7.7 Mpos/s, pos_all 39.1 Mpos/s, at_random 14.0 Mat/s, at_all 58.2 Mat/s, with select_d0.1 162 µs and restrict_d0.1 420 µs. New extractor plot/stress-summary.cpp emits generated/stress-summary.tex; Makefile (EXTRA_EXTRACTORS, PLOTS) wired so make paper rebuilds it. Workloads section (line ~1797) now cross-references the new subsection, narrowing the seismic rhetoric to match what is now reported.
+- Add one hit-versus-miss pos benchmark. The current benchmark path in benchmark.cpp times hits only; the miss check already exists in IPT.ipp and Cuboid.ipp, so this is a measurement gap rather than a code-correctness gap.
+- Add one flat-layout experiment for the serialization and mmap claim. The minimum useful version is bytes-on-disk plus time-to-first-query after mapping a raw entry array or raw point array, tied back to the flat-layout claim in IPT.tex.
+
+**High-Risk Decisions**
+- [DONE 2026-04-29] Add exactly one mature external baseline if you can afford it. My recommendation is one Roaring-based flattened-index baseline rather than several new libraries; it is the best cost-to-value answer to the reviewer’s mature-competitor concern.
+  CRoaring v4.6.1 vendored unmodified under third_party/CRoaring/ (dual Apache-2.0/MIT). New `roaring` baseline added to benchmark.cpp using roaring::Roaring64Map keyed by the bounding-Grid linear index, matching the DenseBitset/BlockBitmap Grid-aware pattern. Wired into run_scenario, verify::run_select (200-query cross-implementation check passes), run/benchmarks.sh (added to heavy_cache_independent_algorithms default), run/benchmark-stress.sh, and run/verify-combinations.sh (all three compile commands now compile roaring.c alongside benchmark.cpp). README.md documents the third-party dependency and the heavy-baseline list.
+- Do not implement the recursive IPT unless you specifically want that project. I would instead shorten IPT.tex so it reads as analytical design rationale, not as an empirical comparison section awaiting measurements.
+- Add one real dataset only if you can do it cleanly within the revision window. If not, narrow the application rhetoric and make synthetic but practically motivated more explicit in IPT.tex and IPT.tex.
+
+If the goal is the highest-probability revision with controlled effort, I would do all of the must-do edits, then prioritize four additions in this order: unordered-input construction, flat-layout experiment, one 5D result, and one mature external baseline.
+
+## Tier 1 — Must do (cheap, all reviewers agree, blocks acceptance)
+
+These are pure manuscript edits, no new measurements.
+
+1. **[DONE 2026-04-29] Reconcile the selection complexity** (GPT). Pick one form — recommend `O(d log κ + d(t+r))` under a `d`-charged comparison model — and apply consistently in the theory section, results section, and abstract.
+   Applied in section:results-selection (line ~2167); theory-section bound left as $O(d\log\kappa+d\,t)$ with a one-line note that the results-section form additionally exposes the yield term $d\,r$.
+2. **[DONE 2026-04-29] Pull the sorted-input precondition forward** (GPT, Opus M3). Mention it in the abstract, in the construction-results paragraph, in the `N/7` amortization sentence, and in the discussion. State explicitly which side incurs the sort in the IPT-vs-SortedPoints construction comparison.
+   Abstract, construction-results subsection, and N/7 sentence updated; new leading paragraph in section:results-construct states both sides are timed from sorted input and that the 3.8× ratio is invariant under a shared sort. Discussion and conclusion already carried the precondition.
+3. **[DONE 2026-04-29] Re-label the restriction benchmark** (GPT). Make explicit in IPT.tex prose and the figure caption that non-IPT baselines are measured on `selection + IPT-rebuild from emitted fragments`, not on a native restriction operator.
+   New paragraph "What the restrict numbers actually compare" in section:results-selection states this explicitly for all non-IPT baselines.
+4. **[DONE 2026-04-29] Rebalance intro/conclusion to the supported regime** (GPT, Opus item 6 in §3 strengths-vs-claims). Foreground pos-heavy / selection-restriction-heavy structured workloads with low κ; surface the `at` penalty earlier; soften the optimality-theorem framing to match the empirical evidence (combine = merge on 61 organic shapes).
+   New "Effective regime" paragraph at the end of the intro plus matching rewrite in the conclusion: foreground pos/select/restrict-heavy structured-low-κ regime, surface the at penalty on highly fragmented inputs, soften the optimality framing to "correctness insurance".
+5. **Narrow the 5D / seismic rhetoric** (GPT, Opus M6) — see Tier 2 for the alternative of adding a 5D measurement instead.
+   *Resolved by item 12 (5D measurement added); rhetoric now matches reported data via section:results-stress-5d.*
+6. **[DONE 2026-04-29] Editorial cleanup pass** (Opus §5, GPT minor): cache-flag prose (`c/r/e/l`), `ub(...)` notation, `⟦I⟧` macro/note, Table 1 anachronism, §7.1 industrial-implementation paragraph (move to appendix or drop), §6.3 metadata example assumptions, all listed typos, figure-placement check.
+   c/r/e/l prose expanded; ub/lb already defined inline at the IPT definition; Table 1 anachronism removed (cites section:results-kappa instead); §7.1 paragraph shortened and rebadged; §6.3 metadata example now exhibits the c0r0e0l0 14-scalar arithmetic; typos fixed ("integer operations", "differ is where … differ", "deduplication they contain", "within $1\%$ of pure mixed-radix", "$1.70\times$ of c0r0e0l0"); merge-condition sentence in §5 now spells out the equal-stride condition.
+7. **[DONE 2026-04-29] Add a short Reproducibility subsection** (Gemini point 3, Opus M8) referencing README.md, Makefile, CITATION.cff, LICENSE, `make plots`, `make verify`, and the per-figure regeneration paths under plot/. Verify the LICENSE matches the README claim and pin compiler versions.
+   New section:reproducibility at the end of section:discussion lists make verify / benchmark / benchmark-stress / plots / paper, points at LICENSE (BSD 3-Clause) and CITATION.cff, and ties result subdirectory naming to the platform table.
+8. **[DONE 2026-04-29] Expand related work + bibliography** (Opus M5). Add and discuss: Roaring bitmaps, succinct rank/select (Jacobson; Raman/Raman/Rao), k²-trees (Brisaboa et al.), CSF (Smith & Karypis), HiCOO (Li et al.), Z-order/Hilbert with run compression (Lawder & King; Tropf & Herzog). One paragraph each in §3, citations into IPT.bib.
+   Three new related-work paragraphs (compressed bitmap indexes, succinct rank/select & k²-trees, higher-dimensional sparse tensor formats) plus extended SFC paragraph; nine new bib entries.
+9. **[DONE 2026-04-29] Discussion paragraph on construction cost in dynamic / AMR settings** (Gemini point 2) and on **practical d-scaling limits** (Gemini point 1) in the Discussion/Limitations section.
+   New paragraphs "Dynamic and AMR settings" and "Practical $d$-scaling" added in section:discussion.
+
+## Tier 2 — High-value experiments (close the GPT/Opus gap)
+
+Order by ratio of reviewer-impact to engineering cost.
+
+10. **Unordered-input end-to-end construction benchmark** (Opus M3, GPT, TODO). Build IPT and SortedPoints from the same unsorted point list; report total wall time. Directly fixes the `N/7` claim. Lowest-risk new measurement; reuses benchmark.cpp infrastructure.
+11. **Hit-vs-miss `pos` benchmark** (Opus M7, TODO). The miss path already exists in `IPT.ipp` / `Cuboid.ipp`; add a workload variant in benchmark.cpp that mixes hits and misses and report both. Removes the bias accusation against SortedPoints `lower_bound`.
+12. **[DONE 2026-04-29] One reported 5D (or ≥4D) result** (GPT, Opus M6, Gemini point 1, TODO). Surface the existing 5D scenario already in benchmark-stress.sh and benchmark.cpp; add one figure or table. Simultaneously answers the d-scaling and seismic-rhetoric concerns.
+    New section:results-stress-5d + table:stress-5d-summary in IPT.tex, populated from the 18 c0r1e1l0 stress runs by a new extractor plot/stress-summary.cpp wired through the Makefile (EXTRA_EXTRACTORS, PLOTS). Reports κ, IPT byte size, construct rate, pos/at throughput, and select/restrict latency for the multiple-survey-9-5d 5D scenario (47×44×41×125×80, 92.26M unique points). The workloads subsection now cross-references it instead of relying on rhetorical narrowing alone.
+13. **Flat-layout / mmap experiment** (Opus M2, TODO). Minimum viable version: bytes-on-disk vs. SortedPoints/RowCSR on the structured scenarios + time-to-first-query after `mmap` on the raw entry array. Required to back the "flat / serializable / mmap-friendly" selling point.
+
+## Tier 3 — Address only if revision window permits
+
+14. **[DONE 2026-04-29] One mature external baseline — Roaring bitmaps only** (Opus M1). Single library, flattened-index wrapper, on the dense-occupancy regime. Skip OpenVDB / CSF / HiCOO unless reviewer pushes back; cite them in related work instead.
+   CRoaring v4.6.1 vendored unmodified under third_party/CRoaring/ (dual Apache-2.0/MIT, no NOTICE upstream). New baseline `Roaring<D>` in benchmark.cpp wraps roaring::Roaring64Map keyed by the bounding-Grid linear index (UNCHECKED_pos for add/select intersection, pos for membership) and reports getSizeInBytes(true) for the metadata footprint after runOptimize+shrinkToFit. Wired into run_scenario (BlockBitmap-style measurement block), verify::run_select (200 queries, all impls agree), and the three compile scripts (run/benchmarks.sh, run/benchmark-stress.sh, run/verify-combinations.sh) now compile third_party/CRoaring/roaring.c alongside benchmark.cpp. roaring is added to heavy_cache_independent_algorithms by default.
+15. **One real-data instance** (Opus M6). Only if a clean open seismic or AMR snapshot can be ingested without changing the workload framework. Otherwise rely on the rhetorical narrowing in item 5 plus the 5D result in item 12.
+
+## Tier 4 — Recommend declining
+
+16. **[DONE 2026-04-29] Implementing the recursive IPT** (Opus M4). High engineering cost for a section that already serves as design rationale. Better to **shorten §6** so it reads as analytical justification, drop the comparative table that implies measured numbers, and explicitly state that no implementation is offered. This converts an M-level objection into an editorial fix.
+    Recursive-IPT subsection in section:design-space now opens with an explicit "design-space landmark, not benchmarked competitor; we do not implement, measure, or ship it" disclaimer; the side-by-side complexity table that suggested empirical parity has been replaced with a short prose summary of the analytical comparison.
+
+---
+
+## Conflicts and Judgment Calls
+
+- **Gemini=Accept vs. Opus=Major.** Opus's bar (mature external baseline, mmap measurement, real data) is real but disputable for a structures-and-algorithms TOMS paper. Tier 1 + items 10–13 together are the minimum that no reviewer can call insufficient. Item 14 is the cheapest concession to Opus M1; item 16 is the cheapest *refusal* of Opus M4 and should be defended explicitly in the response letter.
+- **5D rhetoric (item 5) vs. 5D measurement (item 12).** Doing item 12 lets you keep the seismic motivation; skipping item 12 forces item 5. Pick one, not both.
+
+## Suggested Sequencing
+
+1. Tier 1 edits in one pass (no measurements needed).
+2. Items 10, 11, 12 in parallel — all reuse existing benchmark scaffolding.
+3. Item 13 (flat-layout) once 10–12 are stable.
+4. Item 14 only if 1–13 came in under budget.
+5. Draft the response letter mapping each reviewer comment to a section + commit hash, and explicitly justify the item 16 refusal.
+
+## Deliverables
+
+- Revised IPT.tex and IPT.bib.
+- New / extended benchmark code in benchmark.cpp and one or two new entries under plot/ and generated/.
+- Reproducibility subsection + (optional) AE appendix.
+- Reviewer-by-reviewer response letter.
+
+Want me to (a) expand this into a reviewer-by-reviewer response outline, (b) turn it into a section-mapped editing checklist for IPT.tex, or (c) start applying the Tier 1 edits?
