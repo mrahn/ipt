@@ -41,6 +41,21 @@ namespace ipt
   }
 
   template<std::size_t D>
+    constexpr auto Entry<D>::try_pos
+      ( Point<D> point
+      ) const noexcept -> std::optional<Index>
+  {
+    auto const offset {_cuboid.try_pos (point)};
+
+    if (!offset)
+    {
+      return std::nullopt;
+    }
+
+    return _begin + *offset;
+  }
+
+  template<std::size_t D>
     constexpr auto Entry<D>::UNCHECKED_at
       ( Index index
       ) const noexcept -> Point<D>

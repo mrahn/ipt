@@ -1,4 +1,5 @@
 **Must Do**
+- **Re-run benchmarks on every platform** to refresh the per-platform `results/<platform>/` directories with (a) the new `roaring` baseline rows in `cache-independent-c0r0e0l0.txt` and (b) the brand-new `storage-c0r0e0l0.txt` / `storage-c0r1e1l0.txt` files needed for the flat-layout / mmap experiment (item 13). After the re-runs, refresh the per-figure extractors / `generated/*.tex` and re-run `make paper`. The cache-dependent `c<combo>.txt` and `c0r1e1l0-stress.txt` files do not need to be regenerated (no algorithm changes); the cache-independent file is the only one whose content changed (Roaring added)—existing ones already include Roaring, so only platforms that have not been re-run since 2026-04-29 still need a refresh.
 - [DONE 2026-04-29] Reconcile the selection complexity statement between IPT.tex and IPT.tex. Pick one worst-case form and use it everywhere.
   Unified to $O(d\log\kappa + d\,t + d\,r)$; restored the missing $d$ factor on the binary-search term in section:results-selection (line ~2167) and clarified that the theory-section bound $O(d\log\kappa + d\,t)$ absorbs $r\le t$ into the $d\,t$ term.
 - [DONE 2026-04-29] Pull the sorted-input assumption forward in the abstract, construction results, discussion, and conclusion: IPT.tex, IPT.tex, IPT.tex, IPT.tex. Rewrite the N/7 amortization claim accordingly.
@@ -56,11 +57,13 @@ These are pure manuscript edits, no new measurements.
 
 Order by ratio of reviewer-impact to engineering cost.
 
+0. **[DONE 2026-04-30] Split benchmark.cpp into per-scenario binaries.** The 4386-line monolithic `benchmark.cpp` is gone. New layout: `benchmark/Common.hpp` (shared infrastructure: `Data`, `BenchmarkContext`, `TimedBuild`, `TimedQueries`, `run_scenario_cache_{dependent,independent}`, `run_storage_scenario`), `benchmark/Verify.hpp` (verifier driver), `benchmark/Scenarios.hpp` (data factories), `verify.cpp` (root, runs all 5 verifiers), and 25 self-contained source files in `benchmark/scenarios/` (grid, multiple-survey-2-l..12-fortynine, storage, each × cache-{dependent,independent}). No environment variables: scenario, seed count, query cap, and algorithm subset are hard-coded per binary. Makefile rewritten with per-scenario targets (`benchmark-X-cache-{dependent,independent}`), `benchmark-grid`, `benchmark-cache-sweep`, `benchmark-storage`, `benchmark-5D`, and a top-level `benchmark` target that runs the full reproduction suite. Old shell scripts `run/{benchmarks,benchmark-stress,storage-benchmarks,verify-combinations}.sh` deleted; the `run/` folder is gone entirely (the `result_dir` helper has been inlined into the Makefile and `roaring_library` was made obsolete by the Makefile's own libroaring.a rules). README.md and IPT.tex reproducibility paragraph updated.
+
 10. **Unordered-input end-to-end construction benchmark** (Opus M3, GPT, TODO). Build IPT and SortedPoints from the same unsorted point list; report total wall time. Directly fixes the `N/7` claim. Lowest-risk new measurement; reuses benchmark.cpp infrastructure.
 11. **Hit-vs-miss `pos` benchmark** (Opus M7, TODO). The miss path already exists in `IPT.ipp` / `Cuboid.ipp`; add a workload variant in benchmark.cpp that mixes hits and misses and report both. Removes the bias accusation against SortedPoints `lower_bound`.
 12. **[DONE 2026-04-29] One reported 5D (or ≥4D) result** (GPT, Opus M6, Gemini point 1, TODO). Surface the existing 5D scenario already in benchmark-stress.sh and benchmark.cpp; add one figure or table. Simultaneously answers the d-scaling and seismic-rhetoric concerns.
     New section:results-stress-5d + table:stress-5d-summary in IPT.tex, populated from the 18 c0r1e1l0 stress runs by a new extractor plot/stress-summary.cpp wired through the Makefile (EXTRA_EXTRACTORS, PLOTS). Reports κ, IPT byte size, construct rate, pos/at throughput, and select/restrict latency for the multiple-survey-9-5d 5D scenario (47×44×41×125×80, 92.26M unique points). The workloads subsection now cross-references it instead of relying on rhetorical narrowing alone.
-13. **Flat-layout / mmap experiment** (Opus M2, TODO). Minimum viable version: bytes-on-disk vs. SortedPoints/RowCSR on the structured scenarios + time-to-first-query after `mmap` on the raw entry array. Required to back the "flat / serializable / mmap-friendly" selling point.
+13. **[DONE 2026-04-30] Flat-layout / mmap experiment** (Opus M2). Implemented as `make benchmark-storage`, sourced from `benchmark/scenarios/storage.cpp`, which calls `run_storage_scenario` in `benchmark/Common.hpp`. For each of the structured scenarios `multiple-survey-{2-l..8-threed}`, all 8 storage-capable algorithms (IPT greedy-plus-merge, SortedPoints, DenseBitset, BlockBitmap, Roaring, LexRun, RowCSR-k1, RowCSR-km) are serialized to disk, the page cache is dropped, the file is mmap'd, and time-to-first-response and bytes-on-disk are recorded.  Two cache combinations are produced: `storage-c0r0e0l0.txt` (no caches, minimal IPT footprint) and `storage-c0r1e1l0.txt` (reference). The storage runs are now part of `make benchmark` (the previous suite did not include them).
 
 ## Tier 3 — Address only if revision window permits
 
@@ -82,11 +85,12 @@ Order by ratio of reviewer-impact to engineering cost.
 
 ## Suggested Sequencing
 
-1. Tier 1 edits in one pass (no measurements needed).
-2. Items 10, 11, 12 in parallel — all reuse existing benchmark scaffolding.
-3. Item 13 (flat-layout) once 10–12 are stable.
-4. Item 14 only if 1–13 came in under budget.
-5. Draft the response letter mapping each reviewer comment to a section + commit hash, and explicitly justify the item 16 refusal.
+1. Tier 1 edits in one pass (no measurements needed). [DONE]
+2. Items 10, 11, 12 in parallel — all reuse existing benchmark scaffolding. [12 DONE; 10, 11 pending]
+3. Item 13 (flat-layout) once 10–12 are stable. [DONE 2026-04-30]
+4. Item 14 only if 1–13 came in under budget. [DONE 2026-04-29]
+5. Re-run `make benchmark` on every platform to populate the new `storage-*.txt` files (item 13 data); wire a new extractor `plot/storage-summary.cpp` and a corresponding subsection in the paper.
+6. Draft the response letter mapping each reviewer comment to a section + commit hash, and explicitly justify the item 16 refusal.
 
 ## Deliverables
 
@@ -96,3 +100,7 @@ Order by ratio of reviewer-impact to engineering cost.
 - Reviewer-by-reviewer response letter.
 
 Want me to (a) expand this into a reviewer-by-reviewer response outline, (b) turn it into a section-mapped editing checklist for IPT.tex, or (c) start applying the Tier 1 edits?
+
+
+- Update README and "reproducability"
+- Update the Experiments, results, ...

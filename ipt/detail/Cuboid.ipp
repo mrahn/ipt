@@ -133,6 +133,29 @@ namespace ipt
   }
 
   template<std::size_t D>
+    constexpr auto Cuboid<D>::try_pos
+      ( Point<D> point
+      ) const noexcept -> std::optional<Index>
+  {
+    auto index {Index {0}};
+    auto d {std::size_t {0}};
+
+    for (auto const& ruler : _rulers)
+    {
+      auto const offset {ruler.try_pos (point[d++])};
+
+      if (!offset)
+      {
+        return std::nullopt;
+      }
+
+      index = *offset + index * ruler.size();
+    }
+
+    return index;
+  }
+
+  template<std::size_t D>
     constexpr auto Cuboid<D>::glb() const noexcept -> Point<D>
   {
     auto coordinates {std::array<Coordinate, D>{}};

@@ -158,6 +158,18 @@ namespace ipt
     return (value - _begin) / _stride;
   }
 
+  constexpr auto Ruler::try_pos
+    ( Coordinate value
+    ) const noexcept -> std::optional<Index>
+  {
+    if (!contains (value))
+    {
+      return std::nullopt;
+    }
+
+    return (value - _begin) / _stride;
+  }
+
   constexpr auto Ruler::UNCHECKED_at (Index index) const noexcept -> Coordinate
   {
     return _begin + static_cast<Coordinate> (index) * _stride;

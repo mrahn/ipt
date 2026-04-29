@@ -53,6 +53,10 @@ namespace ipt
     [[nodiscard]] constexpr auto is_singleton() const noexcept -> bool;
     [[nodiscard]] constexpr auto lub() const noexcept -> Coordinate;
     [[nodiscard]] constexpr auto pos (Coordinate) const -> Index;
+    [[nodiscard]] constexpr auto try_pos
+      ( Coordinate
+      ) const noexcept -> std::optional<Index>
+      ;
     [[nodiscard]] constexpr auto size() const noexcept -> Index;
     [[nodiscard]] constexpr auto stride() const noexcept -> Coordinate;
 

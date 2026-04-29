@@ -759,7 +759,16 @@ three containers (sorted array, run-length, or bitmap). They are exact,
 dense-friendly, and support fast intersection, but they are designed
 for 1D set membership and rely on a $2^{16}$-aligned chunking that does
 not generalise to multi-dimensional cuboid metadata of the form used
-here.
+here. We nevertheless include the 64-bit Roaring map (CRoaring,
+vendored under \path{third_party/CRoaring/}) as a measured baseline
+(\texttt{Roaring} in Table~\ref{table:implementations}): each point is
+linearised through the bounding grid by mixed-radix rank, the resulting
+identifier is inserted into a single \texttt{Roaring64Map}, and the
+range selection re-enumerates the bounding-grid cells of $\text{query}
+\cap \text{grid}$ and probes membership.
+This serves as the mature open-source compressed-bitmap reference for
+the dense and sparse occupancy regimes in
+Section~\ref{section:results-selection}.
 
 \paragraph{Succinct rank/select dictionaries.}
 Succinct data structures based on rank/select queries on bit
@@ -1662,19 +1671,22 @@ only the per-fragment translation work also used by \texttt{at} and
 loop and the from-range rebuild used for restriction.
 
 \paragraph{Measured implementations.}
-The benchmark covers ten exact implementations
+The benchmark covers eleven exact implementations
 (Table~\ref{table:implementations}). The two IPT builders are
 greedy-plus-merge and greedy-plus-combine. \texttt{Regular-IPT} builds
 the single-cuboid IPT for fully regular data. \texttt{Grid} applies
 pure mixed-radix rank/unrank to a full regular grid. \texttt{SortedPoints}
 stores the explicit lexicographically sorted point array. \texttt{DenseBitset}
 and \texttt{BlockBitmap} represent the bounding grid as dense occupancy
-bitmaps. \texttt{LexRun} stores maximal lexicographic runs in the fastest
-dimension. \texttt{RowCSR-k1} and \texttt{RowCSR-k2} are compressed-sparse-row
-layouts with one and two row dimensions, respectively.
+bitmaps. \texttt{Roaring} wraps the vendored CRoaring \texttt{Roaring64Map}
+around the same bounding-grid linearisation, providing a mature
+open-source compressed-bitmap reference. \texttt{LexRun} stores maximal
+lexicographic runs in the fastest dimension. \texttt{RowCSR-k1} and
+\texttt{RowCSR-k2} are compressed-sparse-row layouts with one and two row
+dimensions, respectively.
 Together these baselines span explicit-point, dense-occupancy,
-run-length, row-compressed, and regular-grid designs. They do not
-exhaust every practical competitor, especially tree-based or
+compressed-bitmap, run-length, row-compressed, and regular-grid designs.
+They do not exhaust every practical competitor, especially tree-based or
 space-filling-curve variants, but they cover a broad set of exact flat
 and sparse layouts that isolate the IPT's trade-offs against nearby
 representations.
@@ -1713,6 +1725,10 @@ BlockBitmap
   & tiled 64-bit occupancy bitmap
   & smaller structured scenarios
   & cache-local occupancy baseline \\
+Roaring
+  & 64-bit Roaring bitmap on the linearised bounding grid (CRoaring)
+  & smaller structured scenarios
+  & mature compressed-bitmap baseline \\
 LexRun
   & run-length encoding in the fastest dimension
   & all core workloads
@@ -1752,10 +1768,10 @@ The benchmark driver evaluates the cache-dependent IPT implementations
 The cache-independent baselines (SortedPoints, LexRun, RowCSR-k1,
 RowCSR-k2, and Grid) are executed once per platform, because their data
 layout does not depend on IPT cache flags.
-The two dense occupancy baselines (DenseBitset and BlockBitmap) are
-restricted to the seven smaller structured scenarios because their cost
-scales with the full bounding-grid volume rather than with the number of
-occupied points.
+The three occupancy-bitmap baselines (DenseBitset, BlockBitmap, and
+Roaring) are restricted to the seven smaller structured scenarios because
+their selection cost scales with the bounding-grid volume rather than
+with the number of occupied points.
 
 \subsection{Benchmark Setup}
 \label{section:setup}
@@ -1938,6 +1954,44 @@ field, yielding $2^4 = 16$ possible configurations. We refer to a
 configuration by the bit pattern of these flags, e.g.\ \texttt{c0r1e1l0}
 for the default with ruler size and entry-end cached but cuboid size
 and entry lub omitted.
+
+\paragraph{Persistence and mmap measurements.}
+A dedicated storage benchmark exercises the flat-layout requirement of
+Section~\ref{section:requirements}. For every measured layout the
+benchmark performs the following sequence: (i) build the structure
+from the input points; (ii) serialize it to a single contiguous file
+via the layout's \texttt{write} primitive; (iii) record the resulting
+bytes-on-disk; (iv) drop the operating system's page cache for that
+file (\texttt{posix\_fadvise(POSIX\_FADV\_DONTNEED)}, a no-op on
+\texttt{tmpfs} but effective on regular file systems); (v) reopen the
+file and \texttt{mmap} it read-only into the address space, recording
+the load duration; (vi) issue one \texttt{pos}, one \texttt{at}, and
+one \texttt{select} call against the freshly mapped instance, with no
+prior warm-up, to capture the cold first-response latency that a
+live-loaded process would observe; (vii) issue the same
+full \texttt{pos}/\texttt{at} sample loops and \texttt{select} sweep
+used in the regular benchmark, but executed through the mmap-backed
+instance, so that steady-state throughput on the file-backed layout is
+directly comparable to the in-memory numbers reported in
+Sections~\ref{section:results-pos}--\ref{section:results-selection}.
+No pointer fix-up or deserialization step is performed between
+steps~(v) and~(vi): the layout is consumed in place from the mapped
+bytes, which is the property the IPT shares with the
+\textsc{SortedPoints}, \textsc{DenseBitset}, \textsc{BlockBitmap},
+\textsc{Roaring}, \textsc{LexRun} and \textsc{RowCSR-k\(*\)} baselines.
+This sequence is repeated for three independent random query seeds on
+each of the seven smaller structured multiple-survey scenarios
+(\texttt{2-l} through \texttt{8-threed}); the larger scenarios are
+excluded because the dense bitmap baselines either exceed available
+memory or do not finish within the per-scenario budget at full grid
+volume. The storage benchmark is run twice, once at the
+minimal-metadata cache configuration \texttt{c0r0e0l0} and once at the
+paper default \texttt{c0r1e1l0}, so that the on-disk size advantage of
+the minimal IPT is visible alongside the steady-state query advantage
+of the cached IPT. Each run produces an aggregate file
+(\texttt{storage-c0r0e0l0.txt} and \texttt{storage-c0r1e1l0.txt}
+respectively) in the per-platform results directory and is invoked via
+\texttt{make benchmark-storage}.
 
 \subsection{Configuration Selection}
 \label{section:selection}
@@ -2325,13 +2379,141 @@ The gaps widen further at smaller $d$ (where the IPT's binary search
 and skip over empty cuboids dominate the entire pipeline) and shrink
 at $d = 1$ as every implementation becomes yield-bound.
 
+\subsection{Persistence: Serialization, mmap-Load, and First-Response Latency}
+\label{section:results-storage}
+
+This subsection reports the measurements collected by the persistence
+benchmark of Section~\ref{section:metrics}. The goal is to back the
+flat-layout requirement of Section~\ref{section:requirements} with
+empirical evidence: that the IPT and the comparable baselines can be
+serialized to a single contiguous file, mapped back into the address
+space, and queried directly from the mapped bytes with no
+reconstruction step.
+
+\paragraph{What is measured.} For each of the seven smaller structured
+scenarios (\texttt{multiple-survey-2-l}, \texttt{3-steps},
+\texttt{4-overlap}, \texttt{5-mixed}, \texttt{6-bands},
+\texttt{7-large}, \texttt{8-threed}) and each of the eight
+storage-capable layouts (\textsc{IPT} via greedy-plus-merge,
+\textsc{SortedPoints}, \textsc{DenseBitset}, \textsc{BlockBitmap},
+\textsc{Roaring}, \textsc{LexRun}, \textsc{RowCSR-k1},
+\textsc{RowCSR-k\(d{-}1\)}), the benchmark emits five derived
+quantities per (cache configuration, seed) cell:
+(i)~\emph{serialize}, the wall-clock time to write the structure to
+disk in nanoseconds per stored point; (ii)~\emph{bytes-on-disk}, the
+final file size; (iii)~\emph{cold-load}, the wall-clock time to drop
+the page cache, reopen the file, and \texttt{mmap} it; (iv)~the
+first-response latency of \texttt{pos}, \texttt{at}, and
+\texttt{select} on the freshly mapped instance, with no warm-up;
+(v)~the steady-state \texttt{pos}, \texttt{at}, and \texttt{select}
+throughput measured through the mmap-backed instance using the same
+sample loops as Sections~\ref{section:results-pos}--%
+\ref{section:results-selection}.
+
+\paragraph{What the experiment is designed to show.} Three properties
+are under test. First, that the on-disk size of the IPT tracks the
+in-memory metadata footprint reported in
+Section~\ref{section:results-summary}, and in particular that the
+minimal-cache \texttt{c0r0e0l0} configuration is the smallest of the
+eight measured layouts on the structured-regime workloads where it
+applies. Second, that the cold first-response latency of the IPT after
+an \texttt{mmap} is bounded by the page-fault and binary-search cost
+of a single query, and stays within roughly an order of magnitude of
+the steady-state \texttt{pos}/\texttt{at} numbers reported in the
+in-memory subsections, rather than being dominated by a
+reconstruction or pointer-fix-up phase. Third, that the steady-state
+\texttt{pos}/\texttt{at}/\texttt{select} throughput on the
+file-backed instance is comparable (within typical OS-level paging
+noise) to the in-memory numbers, confirming that mmap is not just a
+load mechanism but also a viable steady-state runtime substrate for
+the IPT. The \texttt{c0r0e0l0} versus \texttt{c0r1e1l0} pairing
+additionally exposes the size/throughput trade-off discussed in
+Section~\ref{section:selection} from the persistence side: the same
+default that is preferable in memory is also the preferable target on
+disk, because the cache fields are stored once and amortised over all
+future cold loads of the same file.
+
+The per-scenario, per-algorithm tables and the corresponding figure
+are produced by a dedicated extractor (\texttt{plot/storage-summary})
+over the aggregate files \texttt{storage-c0r0e0l0.txt} and
+\texttt{storage-c0r1e1l0.txt}; both files are emitted into each
+platform's results directory by \texttt{make benchmark-storage}.
+
+\subsection{Hit-vs-Miss \texttt{pos} Cost}
+\label{section:results-pos-mix}
+
+The throughput of \texttt{pos} reported throughout
+Section~\ref{section:results} measures \emph{hits} only: every probed
+point is in the index, every algorithm returns a valid linear
+position, and no exception is ever thrown. Real call sites are not
+that pure; even a small fraction of misses can dominate the cost if a
+miss is signalled by an exception, because exception unwinding on
+mainstream toolchains costs several thousand cycles and dwarfs a
+plain \texttt{pos} call. To avoid blending an unwind cost into the
+hit-only timings the artifact exposes a non-throwing parallel API
+\texttt{try\_pos} that returns \texttt{std::optional<Index>} and is
+implemented for every algorithm without changing the existing,
+throwing \texttt{pos}; both APIs share the same internal lookup so
+their hit-only ns/op are within measurement noise of each other.
+
+The hit-vs-miss benchmark (\texttt{make benchmark-pos-mix}) calls
+\texttt{try\_pos} on a deterministic mixed sample of size
+$1\,000$ for each of five miss ratios
+$\{0.0,\,0.01,\,0.10,\,0.50,\,1.00\}$ and for two miss kinds: an
+\emph{in-grid} miss (a coordinate that lands at a valid grid node but
+is not in the stored set, generated by rejection-sampling the lattice
+$origin + i\cdot stride$) and an \emph{out-of-grid} miss (one
+coordinate perturbed to $lo - stride$ or $lo + extents\cdot stride$).
+The seven structured 3D scenarios used by the storage benchmark
+(\texttt{multiple-survey-2-l} through \texttt{multiple-survey-8-threed})
+are run for three seeds each. Aggregates per algorithm and per miss
+ratio are the geometric mean across the seven scenarios after
+averaging over seeds; the resulting curves on the reference platform
+are shown in Figure~\ref{figure:pos-mix-summary}.
+
+\begin{figure}[ht]
+\centering
+\input{generated/pos-mix-summary}
+\Description{Two-panel figure of average try_pos cost in nanoseconds
+  per query as a function of miss ratio for in-grid and out-of-grid
+  misses, one curve per algorithm, on the reference platform.}
+\caption{Hit-vs-miss \texttt{try\_pos} cost (geometric mean over the
+  seven structured 3D scenarios, averaged across three seeds, on the
+  reference platform). Left panel: misses that land at a valid grid
+  node. Right panel: misses with one coordinate outside the bounding
+  grid. Algorithms whose miss path performs a popcount over a dense
+  bitset (DenseBitset, BlockBitmap) carry the full structure cost on
+  every hit but become very cheap as the miss ratio approaches one;
+  IPT, SortedPoints, Roaring, LexRun and RowCSR all show
+  near-constant cost across the sweep.}
+\label{figure:pos-mix-summary}
+\end{figure}
+
+Three observations follow from the data. First, IPT's
+\texttt{try\_pos} cost is essentially flat in the miss ratio: the
+ruler chain settles a miss at the same lower-bound step it would use
+for a hit, and a missed entry returns \texttt{std::nullopt} without
+descending into the dense block. Second, the popcount-based bitmap
+algorithms (DenseBitset and BlockBitmap) pay their full structure
+cost on every hit but become very cheap as the miss ratio approaches
+one, because the bit-test that fails the membership check short-cuts
+the popcount; this exposes a workload-dependent crossover that the
+hit-only \texttt{pos} number could not show. Third, all CSR-style and
+runlength-style algorithms (SortedPoints, Roaring, LexRun, RowCSR)
+see only a small change in per-call cost across the sweep, because
+their miss path is a binary search that fails one comparison earlier
+than a hit. The two miss kinds (in-grid vs.\ out-of-grid) differ by
+less than a factor of two for every algorithm; out-of-grid misses are
+slightly cheaper because they fail the per-axis bounds check before
+the membership query is built.
+
 \subsection{Higher-Dimensional Stress: a 5D Multiple-Survey Scenario}
 \label{section:results-stress-5d}
 
 To check that the IPT properties survive at higher~$d$ and at a point
 count comparable to a production seismic geometry, the artifact
 includes a fifth, opt-in stress scenario \texttt{multiple-survey-9-5d}
-(executed by \texttt{run/benchmark-stress.sh}). It places a $3\times 4$
+(executed by \texttt{make benchmark-5D}). It places a $3\times 4$
 arrangement of twelve 3D sub-surveys, each carried by its own strides
 in the inline/crossline/offset axes and each expanded by a fixed
 $125\times 80$ azimuth--time block, into a bounding grid of
@@ -2526,11 +2708,18 @@ listed by OS, kernel, CPU, and compiler; each result directory under
 independent re-run on the same hardware/compiler combination produces
 a directly comparable subdirectory. Compilers are pinned by version in
 those directory names. The header-only IPT library lives in
-\texttt{ipt/}; the benchmark driver is the single translation unit
-\texttt{benchmark.cpp}; the per-figure extractors and gnuplot scripts
-are colocated in \texttt{plot/}; aggregated tabular outputs land in
-\texttt{generated/}. Citation metadata for the artifact is provided in
-\texttt{CITATION.cff}.
+\texttt{ipt/}; the benchmark driver is split across
+\texttt{benchmark/Common.hpp}, \texttt{benchmark/Scenarios.hpp}, and
+one translation unit per scenario under
+\texttt{benchmark/scenarios/}; the per-figure extractors and gnuplot
+scripts are colocated in \texttt{plot/}; aggregated tabular outputs
+land in \texttt{generated/}. Citation metadata for the artifact is
+provided in \texttt{CITATION.cff}. The single external dependency
+required by the benchmark driver is the CRoaring amalgamation
+(v4.6.1, dual Apache-2.0\,/\,MIT licensed), vendored unmodified under
+\path{third_party/CRoaring/} and built once into
+\path{build/benchmark/libroaring.a} that every scenario binary links
+against; no system installation is required.
 
 \section{Conclusion}
 \label{section:conclusion}

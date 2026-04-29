@@ -13,12 +13,11 @@
 #include <ipt/Cuboid.hpp>
 #include <ipt/Index.hpp>
 #include <ipt/Point.hpp>
+#include <ipt/storage/Concepts.hpp>
+#include <optional>
 
 namespace ipt
 {
-  template<std::size_t D>
-    struct IPT;
-
   template<std::size_t D>
     struct Entry
   {
@@ -34,6 +33,10 @@ namespace ipt
     [[nodiscard]] constexpr auto end() const noexcept -> Index;
     [[nodiscard]] constexpr auto lub() const noexcept -> Point<D>;
     [[nodiscard]] constexpr auto pos (Point<D>) const -> Index;
+    [[nodiscard]] constexpr auto try_pos
+      ( Point<D>
+      ) const noexcept -> std::optional<Index>
+      ;
     [[nodiscard]] constexpr auto size() const noexcept -> std::size_t;
 
     [[nodiscard]] constexpr auto operator<=>
@@ -42,7 +45,7 @@ namespace ipt
       ;
 
   private:
-    template<std::size_t>
+    template<std::size_t D_, Storage<D_>>
       friend struct IPT;
 
     [[nodiscard]] constexpr auto UNCHECKED_at

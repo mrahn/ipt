@@ -152,7 +152,7 @@ auto main() -> int
         std::memcpy (buf.data(), value.data(), n);
         buf[n] = '\0';
         samples[scenario][std::string {algorithm}][std::string {metric}]
-          .push_back (std::strtod (buf.data(), &end));
+          .push_back (std::strtod (buf.data(), std::addressof (end)));
       }
     );
 

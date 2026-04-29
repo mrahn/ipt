@@ -526,6 +526,42 @@ namespace ipt_plot
       }
     }
 
+    auto constexpr storage_prefix {std::string_view {"storage-"}};
+    if (name.starts_with (storage_prefix) && name.ends_with (".txt"))
+    {
+      auto const config
+        { name.substr ( storage_prefix.size()
+                      , name.size() - storage_prefix.size() - 4
+                      )
+        };
+      if (is_cache_config (config))
+      {
+        return FileMetadata
+          { "storage"
+          , std::string {config}
+          , std::string {config}
+          };
+      }
+    }
+
+    auto constexpr pos_mix_prefix {std::string_view {"pos-mix-"}};
+    if (name.starts_with (pos_mix_prefix) && name.ends_with (".txt"))
+    {
+      auto const config
+        { name.substr ( pos_mix_prefix.size()
+                      , name.size() - pos_mix_prefix.size() - 4
+                      )
+        };
+      if (is_cache_config (config))
+      {
+        return FileMetadata
+          { "pos-mix"
+          , std::string {config}
+          , std::string {config}
+          };
+      }
+    }
+
     return std::nullopt;
   }
 
@@ -555,7 +591,7 @@ namespace ipt_plot
         ( [&]() -> std::size_t
           {
             struct stat st {};
-            if (::fstat (_fd.fd, &st) != 0)
+            if (::fstat (_fd.fd, std::addressof (st)) != 0)
             {
               auto const err {errno};
               throw std::runtime_error
@@ -618,7 +654,7 @@ namespace ipt_plot
       buffer[n] = '\0';
 
       auto* end {static_cast<char*> (nullptr)};
-      auto const parsed {std::strtod (buffer.data(), &end)};
+      auto const parsed {std::strtod (buffer.data(), std::addressof (end))};
       return end == buffer.data() ? 0.0 : parsed;
     }
   }
@@ -669,7 +705,7 @@ namespace ipt_plot
       return to_double (value ("ns_per_point"));
     }
 
-    if (metric == "pos_random" || metric == "pos_all")
+    if (metric == "pos_random" || metric == "pos_all" || metric == "pos_mix")
     {
       return to_double (value ("ns_per_pos"));
     }

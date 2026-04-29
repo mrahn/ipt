@@ -6,7 +6,6 @@
 #include <iterator>
 #include <optional>
 #include <ranges>
-#include <utility>
 
 namespace ipt
 {
@@ -17,14 +16,11 @@ namespace ipt
     constexpr SelectView() noexcept = default;
 
     constexpr SelectView
-      ( Entry<D> const* first
-      , Entry<D> const* last
-      , Cuboid<D> query
+      ( Entry<D> const*
+      , Entry<D> const*
+      , Cuboid<D>
       )
-        : _first {first}
-        , _last {last}
-        , _query {std::in_place, std::move (query)}
-    {}
+      ;
 
     class iterator
     {
@@ -36,75 +32,38 @@ namespace ipt
       constexpr iterator() noexcept = default;
 
       constexpr iterator
-        ( SelectView const* parent
-        , Entry<D> const* current
+        ( SelectView const*
+        , Entry<D> const*
         ) noexcept
-          : _parent {parent}
-          , _current {current}
-      {
-        advance_to_overlap();
-      }
+        ;
 
       [[nodiscard]] constexpr auto operator*
         (
         ) const noexcept -> Cuboid<D> const&
-      {
-        return *_intersection;
-      }
+        ;
 
-      constexpr auto operator++() noexcept -> iterator&
-      {
-        ++_current;
-        advance_to_overlap();
-        return *this;
-      }
-
-      constexpr auto operator++ (int) noexcept -> void
-      {
-        ++*this;
-      }
+      constexpr auto operator++() noexcept -> iterator&;
+      constexpr auto operator++ (int) noexcept -> void;
 
       [[nodiscard]] constexpr auto operator==
         ( std::default_sentinel_t
         ) const noexcept -> bool
-      {
-        return _current == _parent->_last;
-      }
+        ;
 
     private:
-      constexpr auto advance_to_overlap() noexcept -> void
-      {
-        while (_current != _parent->_last)
-        {
-          _intersection = _current->cuboid().intersect (*_parent->_query);
-
-          if (_intersection.has_value())
-          {
-            return;
-          }
-
-          ++_current;
-        }
-
-        _intersection.reset();
-      }
+      constexpr auto advance_to_overlap() noexcept -> void;
 
       SelectView const* _parent {nullptr};
       Entry<D> const* _current {nullptr};
       std::optional<Cuboid<D>> _intersection;
     };
 
-    [[nodiscard]] constexpr auto begin() const noexcept -> iterator
-    {
-      return iterator {this, _first};
-    }
+    [[nodiscard]] constexpr auto begin() const noexcept -> iterator;
 
     [[nodiscard]] constexpr auto end
       (
       ) const noexcept -> std::default_sentinel_t
-    {
-      return {};
-    }
+      ;
 
   private:
     Entry<D> const* _first {nullptr};
@@ -112,3 +71,5 @@ namespace ipt
     std::optional<Cuboid<D>> _query;
   };
 }
+
+#include "detail/SelectView.ipp"

@@ -45,6 +45,10 @@ namespace ipt
       ;
     [[nodiscard]] constexpr auto lub() const noexcept -> Point<D>;
     [[nodiscard]] constexpr auto pos (Point<D>) const -> Index;
+    [[nodiscard]] constexpr auto try_pos
+      ( Point<D>
+      ) const noexcept -> std::optional<Index>
+      ;
     [[nodiscard]] constexpr auto ruler
       ( std::size_t
       ) const noexcept -> Ruler const&
