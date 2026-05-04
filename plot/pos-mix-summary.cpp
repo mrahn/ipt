@@ -1,8 +1,9 @@
 // Extract hit-vs-miss try_pos timings from pos-mix-<combo>.txt files
 // for the reference platform.  One TSV row per miss_ratio; columns are
 // ratio followed by ns_per_pos for each (algorithm, miss_kind) pair,
-// aggregated as geometric mean across the 7 structured 3D scenarios
-// (averaged first across seeds within each scenario).
+// aggregated as geometric mean across the seven smaller structured
+// multiple-survey scenarios (averaged first across seeds within each
+// scenario).
 
 #include "IPTPlot.hpp"
 
@@ -38,6 +39,16 @@ namespace
     { "0.000", "0.010", "0.100", "0.500", "1.000" };
 
   constexpr std::array<std::string_view, 2> kind_order {"in_grid", "out_of_grid"};
+
+  constexpr std::array<std::string_view, 7> scenario_order
+    { "multiple-survey-2-l"
+    , "multiple-survey-3-steps"
+    , "multiple-survey-4-overlap"
+    , "multiple-survey-5-mixed"
+    , "multiple-survey-6-bands"
+    , "multiple-survey-7-large"
+    , "multiple-survey-8-threed"
+    };
 }
 
 auto main() -> int
@@ -93,8 +104,6 @@ auto main() -> int
     );
   std::printf ("\n");
 
-  auto const scenarios {structured_scenarios()};
-
   std::ranges::for_each
     ( ratio_tags
     , [&] (auto ratio)
@@ -110,7 +119,7 @@ auto main() -> int
                   {
                     auto per_scenario_means {std::vector<double>{}};
                     std::ranges::for_each
-                      ( scenarios
+                      ( scenario_order
                       , [&] (auto const& scenario)
                         {
                           auto const* values

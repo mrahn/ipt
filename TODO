@@ -104,3 +104,7 @@ Want me to (a) expand this into a reviewer-by-reviewer response outline, (b) tur
 
 - Update README and "reproducability"
 - Update the Experiments, results, ...
+
+- Rework section 6.4
+
+The spearman correlations at the end of section 7: Are they correct? Are they really telling the story the paper wants them to tell? Among the platforms: Is there a platform that is different? PLease look specifically at the RHEL97/XeonGold6348 platform.

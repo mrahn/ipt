@@ -60,7 +60,7 @@ namespace
     }
   };
 
-  auto fmt_rate (RateSamples const& s) -> std::string
+  auto fmt_rate_value (RateSamples const& s) -> std::string
   {
     if (s.values.empty())
     {
@@ -68,15 +68,26 @@ namespace
     }
 
     auto const center {ipt_plot::geomean (s.values)};
-    auto const lo {ipt_plot::percentile (0.10, s.values)};
-    auto const hi {ipt_plot::percentile (0.90, s.values)};
-    char buf[128];
-    std::snprintf
-      (buf, sizeof (buf), "%.1f \\,(%.1f--%.1f)", center, lo, hi);
+    char buf[64];
+    std::snprintf (buf, sizeof (buf), "%.1f", center);
     return buf;
   }
 
-  auto fmt_latency_us (LatencySamples const& s) -> std::string
+  auto fmt_rate_percentiles (RateSamples const& s) -> std::string
+  {
+    if (s.values.empty())
+    {
+      return "--";
+    }
+
+    auto const lo {ipt_plot::percentile (0.10, s.values)};
+    auto const hi {ipt_plot::percentile (0.90, s.values)};
+    char buf[64];
+    std::snprintf (buf, sizeof (buf), "%.1f--%.1f", lo, hi);
+    return buf;
+  }
+
+  auto fmt_latency_us_value (LatencySamples const& s) -> std::string
   {
     if (s.values.empty())
     {
@@ -92,11 +103,60 @@ namespace
       );
 
     auto const center {ipt_plot::geomean (scaled)};
+    char buf[64];
+    std::snprintf (buf, sizeof (buf), "%.1f", center);
+    return buf;
+  }
+
+  auto fmt_latency_us_percentiles (LatencySamples const& s) -> std::string
+  {
+    if (s.values.empty())
+    {
+      return "--";
+    }
+
+    auto scaled {std::vector<double>{}};
+    scaled.reserve (s.values.size());
+    std::ranges::transform
+      ( s.values
+      , std::back_inserter (scaled)
+      , [] (auto v) { return v / 1000.0; }
+      );
+
     auto const lo {ipt_plot::percentile (0.10, scaled)};
     auto const hi {ipt_plot::percentile (0.90, scaled)};
-    char buf[128];
-    std::snprintf
-      (buf, sizeof (buf), "%.1f \\,(%.1f--%.1f)", center, lo, hi);
+    char buf[64];
+    std::snprintf (buf, sizeof (buf), "%.1f--%.1f", lo, hi);
+    return buf;
+  }
+
+  auto fmt_bytes_per_point (long bytes, long points) -> std::string
+  {
+    if (bytes <= 0 || points <= 0)
+    {
+      return "--";
+    }
+
+    auto const value
+      { static_cast<double> (bytes) / static_cast<double> (points)
+      };
+    char buf[64];
+    if (value < 0.01)
+    {
+      std::snprintf (buf, sizeof (buf), "%.4f", value);
+    }
+    else if (value < 0.1)
+    {
+      std::snprintf (buf, sizeof (buf), "%.3f", value);
+    }
+    else if (value < 10.0)
+    {
+      std::snprintf (buf, sizeof (buf), "%.2f", value);
+    }
+    else
+    {
+      std::snprintf (buf, sizeof (buf), "%.1f", value);
+    }
     return buf;
   }
 }
@@ -229,54 +289,73 @@ auto main() -> int
     , point_count
     , platform_ids.size()
     );
-  std::printf ("\\begin{tabular}{lr}\n");
+  std::printf ("\\begin{tabular}{llr}\n");
   std::printf ("\\toprule\n");
-  std::printf ("Metric & Geomean across %zu platforms (10th--90th pct.) \\\\\n"
-              , platform_ids.size());
+  std::printf ("\\multicolumn{2}{l}{Structural constant} & Value \\\\\n");
   std::printf ("\\midrule\n");
   std::printf
-    ( "Cuboids ($\\kappa$) & \\multicolumn{1}{l}{%ld (constant)} \\\\\n"
+    ( "Cuboids & $\\kappa$ & \\multicolumn{1}{l}{%ld} \\\\\n"
     , cuboid_counts[algo]
     );
   std::printf
-    ( "IPT bytes & \\multicolumn{1}{l}{%ld (constant)} \\\\\n"
+    ( "IPT size & bytes & \\multicolumn{1}{l}{%ld} \\\\\n"
     , ipt_bytes_values[algo]
     );
   std::printf
-    ( "Construct (Mpoint/s) & %s \\\\\n"
-    , fmt_rate (rates[algo]["construct"]).c_str()
+    ( " & bytes/point & \\multicolumn{1}{l}{%s} \\\\\n"
+    , fmt_bytes_per_point (ipt_bytes_values[algo], point_count).c_str()
+    );
+  std::printf ("\\bottomrule\n");
+  std::printf ("\\end{tabular}\n");
+  std::printf ("\\medskip\n");
+  std::printf ("\\begin{tabular}{llrr}\n");
+  std::printf ("\\toprule\n");
+  std::printf ("\\multicolumn{2}{l}{Metric} & Value & 10th--90th pct. \\\\\n");
+  std::printf ("\\midrule\n");
+  std::printf
+    ( "Construct & Mpoint/s & %s & %s \\\\\n"
+    , fmt_rate_value (rates[algo]["construct"]).c_str()
+    , fmt_rate_percentiles (rates[algo]["construct"]).c_str()
     );
   std::printf
-    ( "\\texttt{pos\\_random} (Mpos/s) & %s \\\\\n"
-    , fmt_rate (rates[algo]["pos_random"]).c_str()
+    ( "\\texttt{pos\\_random} & Mpos/s & %s & %s \\\\\n"
+    , fmt_rate_value (rates[algo]["pos_random"]).c_str()
+    , fmt_rate_percentiles (rates[algo]["pos_random"]).c_str()
     );
   std::printf
-    ( "\\texttt{pos\\_all} (Mpos/s) & %s \\\\\n"
-    , fmt_rate (rates[algo]["pos_all"]).c_str()
+    ( "\\texttt{pos\\_all} & Mpos/s & %s & %s \\\\\n"
+    , fmt_rate_value (rates[algo]["pos_all"]).c_str()
+    , fmt_rate_percentiles (rates[algo]["pos_all"]).c_str()
     );
   std::printf
-    ( "\\texttt{at\\_random} (Mat/s) & %s \\\\\n"
-    , fmt_rate (rates[algo]["at_random"]).c_str()
+    ( "\\texttt{at\\_random} & Mat/s & %s & %s \\\\\n"
+    , fmt_rate_value (rates[algo]["at_random"]).c_str()
+    , fmt_rate_percentiles (rates[algo]["at_random"]).c_str()
     );
   std::printf
-    ( "\\texttt{at\\_all} (Mat/s) & %s \\\\\n"
-    , fmt_rate (rates[algo]["at_all"]).c_str()
+    ( "\\texttt{at\\_all} & Mat/s & %s & %s \\\\\n"
+    , fmt_rate_value (rates[algo]["at_all"]).c_str()
+    , fmt_rate_percentiles (rates[algo]["at_all"]).c_str()
     );
   std::printf
-    ( "\\texttt{select\\_d0.01} ($\\mu$s/query) & %s \\\\\n"
-    , fmt_latency_us (latencies[algo]["select_d001"]).c_str()
+    ( "\\texttt{select\\_d0.01} & $\\mu$s/query & %s & %s \\\\\n"
+    , fmt_latency_us_value (latencies[algo]["select_d001"]).c_str()
+    , fmt_latency_us_percentiles (latencies[algo]["select_d001"]).c_str()
     );
   std::printf
-    ( "\\texttt{select\\_d0.1} ($\\mu$s/query) & %s \\\\\n"
-    , fmt_latency_us (latencies[algo]["select_d01"]).c_str()
+    ( "\\texttt{select\\_d0.1} & $\\mu$s/query & %s & %s \\\\\n"
+    , fmt_latency_us_value (latencies[algo]["select_d01"]).c_str()
+    , fmt_latency_us_percentiles (latencies[algo]["select_d01"]).c_str()
     );
   std::printf
-    ( "\\texttt{restrict\\_d0.01} ($\\mu$s/query) & %s \\\\\n"
-    , fmt_latency_us (latencies[algo]["restrict_d001"]).c_str()
+    ( "\\texttt{restrict\\_d0.01} & $\\mu$s/query & %s & %s \\\\\n"
+    , fmt_latency_us_value (latencies[algo]["restrict_d001"]).c_str()
+    , fmt_latency_us_percentiles (latencies[algo]["restrict_d001"]).c_str()
     );
   std::printf
-    ( "\\texttt{restrict\\_d0.1} ($\\mu$s/query) & %s \\\\\n"
-    , fmt_latency_us (latencies[algo]["restrict_d01"]).c_str()
+    ( "\\texttt{restrict\\_d0.1} & $\\mu$s/query & %s & %s \\\\\n"
+    , fmt_latency_us_value (latencies[algo]["restrict_d01"]).c_str()
+    , fmt_latency_us_percentiles (latencies[algo]["restrict_d01"]).c_str()
     );
   std::printf ("\\bottomrule\n");
   std::printf ("\\end{tabular}\n");

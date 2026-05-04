@@ -23,9 +23,17 @@ set logscale y
 set ylabel 'ns / \texttt{try\_pos}'
 set xlabel 'miss ratio'
 set xrange [-0.05:1.05]
+set yrange [1:100000]
 set xtics 0,0.25,1
+set ytics \
+    ('$10^{0}$' 1, \
+     '$10^{1}$' 10, \
+     '$10^{2}$' 100, \
+     '$10^{3}$' 1000, \
+     '$10^{4}$' 10000, \
+     '$10^{5}$' 100000)
 set grid back ytics xtics lc rgb 'gray60' dt 3 lw 1
-set key below center horizontal maxcols 4 samplen 2
+set key off
 
 set linetype 1 lc rgb '#000000' lw 2 pt 7
 set linetype 2 lc rgb '#404040' lw 2 pt 5
@@ -36,10 +44,15 @@ set linetype 6 lc rgb '#202020' lw 2 dt 2 pt 6
 set linetype 7 lc rgb '#404040' lw 2 dt 2 pt 4
 set linetype 8 lc rgb '#606060' lw 2 dt 2 pt 8
 
-set multiplot layout 1,2 margins 0.10,0.98,0.20,0.94 spacing 0.10,0.10 \
-    title 'Hit-vs-miss \texttt{try\_pos} (geometric mean over 7 scenarios)'
+set multiplot
 
-set title 'in-grid misses'
+# Left panel.
+set lmargin at screen 0.10
+set rmargin at screen 0.48
+set bmargin at screen 0.28
+set tmargin at screen 0.94
+set title 'in-grid'
+set ylabel 'ns / \texttt{try\_pos}'
 plot 'plot/pos-mix-summary.tsv' \
          u 1:2  w lp title 'IPT'                     lt 1, \
      ''  u 1:3  w lp title 'SortedPoints'            lt 2, \
@@ -50,8 +63,13 @@ plot 'plot/pos-mix-summary.tsv' \
      ''  u 1:8  w lp title 'RowCSR\textsubscript{1}' lt 7, \
      ''  u 1:9  w lp title 'RowCSR\textsubscript{2}' lt 8
 
-unset key
-set title 'out-of-grid misses'
+# Right panel.
+set lmargin at screen 0.57
+set rmargin at screen 0.98
+set bmargin at screen 0.28
+set tmargin at screen 0.94
+set title 'out-of-grid'
+unset ylabel
 plot 'plot/pos-mix-summary.tsv' \
          u 1:10 w lp notitle lt 1, \
      ''  u 1:11 w lp notitle lt 2, \
@@ -61,5 +79,32 @@ plot 'plot/pos-mix-summary.tsv' \
      ''  u 1:15 w lp notitle lt 6, \
      ''  u 1:16 w lp notitle lt 7, \
      ''  u 1:17 w lp notitle lt 8
+
+# Legend strip.
+unset logscale y
+unset grid
+unset border
+unset xlabel
+unset ylabel
+unset xtics
+unset ytics
+set format x ''
+set format y ''
+set xrange [0:1]
+set yrange [0:1]
+set lmargin at screen 0.10
+set rmargin at screen 0.98
+set bmargin at screen 0.02
+set tmargin at screen 0.16
+unset title
+set key center center horizontal maxcols 8 samplen 1 spacing 1
+plot 1/0 w lp title 'IPT'                     lt 1, \
+    1/0 w lp title 'SortedPoints'            lt 2, \
+    1/0 w lp title 'DenseBitset'             lt 3, \
+    1/0 w lp title 'BlockBitmap'             lt 4, \
+    1/0 w lp title 'Roaring'                 lt 5, \
+    1/0 w lp title 'LexRun'                  lt 6, \
+    1/0 w lp title 'RowCSR\textsubscript{1}' lt 7, \
+    1/0 w lp title 'RowCSR\textsubscript{2}' lt 8
 
 unset multiplot

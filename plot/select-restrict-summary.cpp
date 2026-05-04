@@ -34,7 +34,7 @@ namespace
     return {"greedy-plus-merge", "greedy-plus-combine", "regular-ipt"};
   }
 
-  constexpr auto baselines() noexcept -> std::array<std::string_view, 6>
+  constexpr auto baselines() noexcept -> std::array<std::string_view, 7>
   {
     return
       { "sorted-points"
@@ -43,6 +43,7 @@ namespace
       , "row-csr-k2"
       , "dense-bitset"
       , "block-bitmap"
+      , "roaring"
       };
   }
 

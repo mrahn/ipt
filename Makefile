@@ -50,7 +50,11 @@ PLOT_NAMES += pos-ratio-vs-density
 PLOT_NAMES += pos-mix-summary
 
 # Extra extractor that produces a stand-alone summary report.
-EXTRA_EXTRACTORS := select-restrict-summary stress-summary
+EXTRA_EXTRACTORS := \
+	select-restrict-summary \
+	stress-summary \
+	stress-ratio-summary \
+	storage-summary
 
 EXTRACT_NAMES := $(PLOT_NAMES) $(EXTRA_EXTRACTORS)
 EXTRACT_BIN_DIR := generated/extract
@@ -66,8 +70,8 @@ RESULT_FILES := $(sort $(foreach dir,$(RESULT_DIRS),$(wildcard $(dir)/*.txt)))
 # -- top-level targets ------------------------------------------------
 
 .PHONY: paper verify benchmark benchmark-grid benchmark-cache-sweep \
-        benchmark-storage benchmark-pos-mix benchmark-5D \
-        plots clean distclean help \
+	benchmark-storage benchmark-pos-mix benchmark-5D \
+	plots plits clean distclean help \
         benchmark-build
 
 help:
@@ -98,7 +102,7 @@ help:
 	@echo '  benchmark-storage                Storage benchmark for combinations'
 	@echo '                                   c0r0e0l0 and c0r1e1l0.'
 	@echo '  benchmark-pos-mix                Hit-vs-miss try_pos benchmark for the'
-	@echo '                                   7 structured 3D scenarios, reference'
+	@echo '                                   7 smaller structured scenarios, reference'
 	@echo '                                   combination.'
 	@echo '  benchmark-<scenario>-pos-mix     One scenario, hit-vs-miss pos.'
 	@echo '  benchmark-5D                     5D stress benchmark'
@@ -198,7 +202,7 @@ STRESS_SCENARIO   := multiple-survey-9-5d
 CACHE_DEPENDENT_SCENARIOS := $(GRID_SCENARIO) $(STRUCTURED_SCENARIOS_3D)
 # All scenarios that participate in the cache-independent reference run.
 CACHE_INDEPENDENT_SCENARIOS := $(GRID_SCENARIO) $(STRUCTURED_SCENARIOS_3D)
-# Storage subset: only the structured 3D scenarios that have substantial IPT structure.
+# Storage subset: only the seven smaller structured scenarios.
 STORAGE_SCENARIOS := \
   multiple-survey-2-l \
   multiple-survey-3-steps \
@@ -207,12 +211,12 @@ STORAGE_SCENARIOS := \
   multiple-survey-6-bands \
   multiple-survey-7-large \
   multiple-survey-8-threed
-# Hit-vs-miss pos benchmark: same 7 structured 3D scenarios as storage.
+# Hit-vs-miss pos benchmark: same seven-scenario subset as storage.
 POS_MIX_SCENARIOS := $(STORAGE_SCENARIOS)
 
 .PHONY: paper verify benchmark benchmark-grid benchmark-cache-sweep \
-        benchmark-storage benchmark-pos-mix benchmark-5D \
-        plots clean distclean help \
+	benchmark-storage benchmark-pos-mix benchmark-5D \
+	plots plits clean distclean help \
         benchmark-build
 
 # ---- libroaring.a (built once) --------------------------------------
@@ -416,8 +420,6 @@ benchmark: benchmark-build | $(RESULT_DIR)
 TSVS := $(patsubst %,plot/%.tsv,$(PLOT_NAMES))
 PLOTS := $(foreach p,$(PLOT_NAMES),generated/$(p).tex generated/$(p).pdf)
 
-plots: $(PLOTS)
-
 # Compile each extractor on the fly. They share IPTPlot.hpp; touching
 # the header rebuilds them all. Multiple extractors build (and run) in
 # parallel under `make -j`.
@@ -445,6 +447,22 @@ generated/stress-summary.tex: $(EXTRACT_BIN_DIR)/stress-summary $(RESULT_FILES) 
 	$< > $@
 
 PLOTS += generated/stress-summary.tex
+
+# Stress ratio summary: extractor writes the LaTeX table directly.
+generated/stress-ratio-summary.tex: $(EXTRACT_BIN_DIR)/stress-ratio-summary $(RESULT_FILES) | generated
+	$< > $@
+
+PLOTS += generated/stress-ratio-summary.tex
+
+# Storage summary: extractor writes the LaTeX table directly.
+generated/storage-summary.tex: $(EXTRACT_BIN_DIR)/storage-summary $(RESULT_FILES) | generated
+	$< > $@
+
+PLOTS += generated/storage-summary.tex
+
+plots: $(PLOTS)
+
+plits: plots
 
 generated:
 	mkdir -p generated
