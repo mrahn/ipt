@@ -31,6 +31,44 @@ namespace ipt
   {}
 
   template<std::size_t D>
+    constexpr auto Cuboid<D>::append_if_mergeable
+      ( Point<D> const& point
+      ) noexcept -> bool
+  {
+    auto differs_at {D};
+
+    for (auto d {std::size_t {0}}; d < D; ++d)
+    {
+      if (  !_rulers[d].is_singleton()
+         || _rulers[d].begin() != point[d]
+         )
+      {
+        if (differs_at != D)
+        {
+          return false;
+        }
+
+        if (!_rulers[d].is_extended_by (point[d]))
+        {
+          return false;
+        }
+
+        differs_at = d;
+      }
+    }
+
+    assert (differs_at < D);
+
+    _rulers[differs_at].extend_with (point[differs_at]);
+
+#if IPT_BENCHMARK_CACHE_CUBOID_SIZE
+    _size += 1;
+#endif
+
+    return true;
+  }
+
+  template<std::size_t D>
     constexpr auto Cuboid<D>::merge_if_mergeable
       ( Cuboid<D> const& other
       ) noexcept -> bool

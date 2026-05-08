@@ -247,6 +247,20 @@ namespace ipt
   }
 
   constexpr auto Ruler::is_extended_by
+    ( Coordinate coordinate
+    ) const noexcept -> bool
+  {
+    assert (! (coordinate < begin()));
+
+    if (is_singleton())
+    {
+      return coordinate != begin();
+    }
+
+    return end() == coordinate;
+  }
+
+  constexpr auto Ruler::is_extended_by
     ( Ruler const& other
     ) const noexcept -> bool
   {
@@ -268,6 +282,22 @@ namespace ipt
     }
 
     return other.stride() == stride() && end() == other.begin();
+  }
+
+  constexpr auto Ruler::extend_with (Coordinate coordinate) noexcept -> void
+  {
+    assert (is_extended_by (coordinate));
+
+    if (is_singleton())
+    {
+      _stride = coordinate - begin();
+    }
+
+    _end = coordinate + _stride;
+
+#if IPT_BENCHMARK_CACHE_RULER_SIZE
+    _size += 1;
+#endif
   }
 
   constexpr auto Ruler::extend_with (Ruler const& other) noexcept -> void

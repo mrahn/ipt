@@ -61,9 +61,14 @@ namespace ipt
     [[nodiscard]] constexpr auto stride() const noexcept -> Coordinate;
 
     [[nodiscard]] constexpr auto is_extended_by
+      ( Coordinate
+      ) const noexcept -> bool
+      ;
+    [[nodiscard]] constexpr auto is_extended_by
       ( Ruler const&
       ) const noexcept -> bool
       ;
+    constexpr auto extend_with (Coordinate) noexcept -> void;
     constexpr auto extend_with (Ruler const&) noexcept -> void;
 
     [[nodiscard]] constexpr auto operator<=>

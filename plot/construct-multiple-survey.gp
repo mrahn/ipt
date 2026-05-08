@@ -1,10 +1,11 @@
 # Plot: construction time for multiple-survey scenarios.
 set encoding utf8
-set terminal cairolatex pdf size 6.4in,3.8in
+set terminal cairolatex pdf size 6.0in,3.8in
 set output 'generated/construct-multiple-survey.tex'
 
 set ylabel 'ns / point (construction)'
 set y2label 'Mpoint / s'
+set y2label offset -1.0,0
 set y2tics format '%.0f'
 set link y2 via 1000.0/y inverse 1000.0/y
 set yrange [0:30]

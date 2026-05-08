@@ -23,6 +23,10 @@ namespace ipt
   {
     [[nodiscard]] constexpr Entry (Cuboid<D>, Index) noexcept;
 
+    [[nodiscard]] constexpr auto append_if_mergeable
+      ( Point<D> const&
+      ) noexcept -> bool
+      ;
     [[nodiscard]] constexpr auto merge_if_mergeable
       ( Entry const&
       ) noexcept -> bool

@@ -28,6 +28,10 @@ namespace ipt
     };
     [[nodiscard]] constexpr Cuboid (Singleton) noexcept;
 
+    [[nodiscard]] constexpr auto append_if_mergeable
+      ( Point<D> const&
+      ) noexcept -> bool
+      ;
     [[nodiscard]] constexpr auto merge_if_mergeable
       ( Cuboid<D> const&
       ) noexcept -> bool

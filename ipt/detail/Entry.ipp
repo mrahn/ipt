@@ -64,6 +64,26 @@ namespace ipt
   }
 
   template<std::size_t D>
+    constexpr auto Entry<D>::append_if_mergeable
+      ( Point<D> const& point
+      ) noexcept -> bool
+  {
+    if (!_cuboid.append_if_mergeable (point))
+    {
+      return false;
+    }
+
+#if IPT_BENCHMARK_CACHE_ENTRY_END
+    _end += 1;
+#endif
+#if IPT_BENCHMARK_CACHE_ENTRY_LUB
+    _lub = point;
+#endif
+
+    return true;
+  }
+
+  template<std::size_t D>
     constexpr auto Entry<D>::merge_if_mergeable
       ( Entry const& other
       ) noexcept -> bool

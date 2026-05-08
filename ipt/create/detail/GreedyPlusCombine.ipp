@@ -124,10 +124,7 @@ namespace ipt::create
   template<std::size_t D>
     auto GreedyPlusCombine<D>::add (Point<D> const& point) -> void
   {
-    add_cuboid_and_merge
-      ( _entries
-      , Cuboid<D> {typename Cuboid<D>::Singleton {point}}
-      );
+    add_point_and_merge (_entries, point);
 
     while (try_combine (_entries))
     {

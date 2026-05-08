@@ -13,6 +13,13 @@ namespace ipt::create
       , Cuboid<D> const&
       ) -> void
       ;
+
+  template<std::size_t D>
+    auto add_point_and_merge
+      ( std::vector<Entry<D>>&
+      , Point<D> const&
+      ) -> void
+      ;
 }
 
 #include "detail/add_cuboid_and_merge.ipp"

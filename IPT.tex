@@ -2207,7 +2207,7 @@ as a function of density for the four grid sizes.
 
 \begin{figure}
 \centering
-\input{generated/construct-multiple-survey.tex}
+\resizebox{0.96\linewidth}{!}{\input{generated/construct-multiple-survey.tex}}
 \caption{Construction time per point on the multiple-survey
   scenarios for the practical IPT and all applicable non-IPT baselines
   (\texttt{c0r1e1l0}, EPYC~9454 reference platform, with error bars
@@ -2327,12 +2327,14 @@ storage.
 
 \begin{figure}
 \centering
-\input{generated/pos-multiple-survey.tex}
+\resizebox{0.96\linewidth}{!}{\input{generated/pos-multiple-survey.tex}}
 \caption{Absolute \texttt{pos} performance on the multiple-survey
   scenarios (\texttt{c0r1e1l0}, EPYC~9454 reference platform, with
   error bars spanning the 10th-90th percentile across the 5
-  repetitions).}
-\Description{A bar chart comparing absolute pos query performance for IPT and SortedPoints across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across the 5 repetitions.}
+  repetitions). Only algorithms whose 10th-90th-percentile range
+  stays within 250~ns/\texttt{pos} are drawn for a given scenario.
+  }
+\Description{A bar chart comparing absolute pos query performance for IPT, SortedPoints, DenseBitset, BlockBitmap, Roaring, LexRun, RowCSR-k1, and RowCSR-k2 across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across the 5 repetitions. Only series whose plotted range stays within 250 ns per pos are drawn for a given scenario. Algorithms omitted from the bars remain listed in the legend.}
 \label{figure:pos-multi-survey}
 \end{figure}
 
@@ -2371,12 +2373,14 @@ better locality for both layouts.
 
 \begin{figure}
 \centering
-\input{generated/at-multiple-survey.tex}
+\resizebox{0.96\linewidth}{!}{\input{generated/at-multiple-survey.tex}}
 \caption{Absolute \texttt{at} performance on the multiple-survey
   scenarios (\texttt{c0r1e1l0}, EPYC~9454 reference platform, with
   error bars spanning the 10th-90th percentile across the 5
-  repetitions).}
-\Description{A bar chart comparing absolute at query performance for IPT and SortedPoints across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across the 5 repetitions.}
+  repetitions). Only algorithms whose 10th-90th-percentile range
+  stays within 250~ns/\texttt{at} are drawn for a given scenario.
+  Omitted algorithms remain in the legend.}
+\Description{A bar chart comparing absolute at query performance for IPT, SortedPoints, DenseBitset, BlockBitmap, Roaring, LexRun, RowCSR-k1, and RowCSR-k2 across the nine structured multiple-survey scenarios on the EPYC 9454 reference platform, with 10th-to-90th-percentile error bars across the 5 repetitions. Only series whose plotted range stays within 250 ns per at are drawn for a given scenario. Algorithms omitted from the bars remain listed in the legend.}
 \label{figure:at-multi-survey}
 \end{figure}
 
