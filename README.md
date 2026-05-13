@@ -5,31 +5,32 @@ The paper and benchmark code for the Adaptive Index-Point Translator
 
 ## Contents
 
-- `IPT.tex` — LaTeX source of the paper.
-- `IPT.bib` — BibTeX database.
-- `texmf/` — ACM `acmart` class and bundled style files.
+- `paper/IPT.tex` — LaTeX source of the paper.
+- `paper/IPT.bib` — BibTeX database.
+- `paper/texmf/` — ACM `acmart` class and bundled style files.
 - `Makefile` — build targets for the paper, plots, and benchmarks.
-- `verify.cpp` — small driver that runs the corner-steal,
+- `src/verify.cpp` — small driver that runs the corner-steal,
   cross-implementation restrict, and storage round-trip verifiers.
   Built once per cache-flag combination by `make verify`.
-- `benchmark/Common.hpp` — shared benchmark infrastructure (`Data`,
+- `src/benchmark/Common.hpp` — shared benchmark infrastructure (`Data`,
   `BenchmarkContext`, `TimedBuild`, `TimedQueries`, the
   `run_scenario_*` and `run_storage_scenario` template functions,
   and the std::formatter specialisations).
-- `benchmark/Verify.hpp` — verifier driver functions used by
-  `verify.cpp`.
-- `benchmark/Scenarios.hpp` — data factories for the structured
+- `src/benchmark/Verify.hpp` — verifier driver functions used by
+  `src/verify.cpp`.
+- `src/benchmark/Scenarios.hpp` — data factories for the structured
   multiple-survey scenarios.
-- `benchmark/scenarios/<name>-cache-{dependent,independent}.cpp`,
-  `benchmark/scenarios/storage.cpp` — one source file per scenario
+- `src/benchmark/scenarios/<name>-cache-{dependent,independent}.cpp`,
+  `src/benchmark/scenarios/storage.cpp` — one source file per scenario
   per algorithm class; each compiles to its own benchmark binary.
   No env-variable selection: scenario, seed count, query cap and
   algorithm subset are all hard-coded per file.
-- `ipt/` — header-only IPT library included by the benchmark sources.
-- `plot/` — gnuplot scripts and small C++ extractors
-  (`plot/*.cpp`, `plot/IPTPlot.hpp`) that turn raw result files into
+- `src/ipt/` — header-only IPT library included by the benchmark sources.
+- `results/plot/` — gnuplot scripts and small C++ extractors
+  (`results/plot/*.cpp`, `results/plot/IPTPlot.hpp`) that turn raw
+  result files into
   the TSV inputs of the figures and the generated LaTeX summary
-  tables used by the paper, plus `plot/restrict-summary.cpp`
+  tables used by the paper, plus `results/plot/restrict-summary.cpp`
   for a stand-alone restriction summary report. The Makefile
   compiles the extractors on the fly and runs them in parallel.
 ## Prerequisites
@@ -43,7 +44,7 @@ The paper and benchmark code for the Adaptive Index-Point Translator
   this repository are GCC 14 and Clang 20.
 - `gnuplot` (with the `cairolatex` terminal).
 - A TeX Live distribution with `pdflatex` and `bibtex`. The ACM
-  `acmart` class is included in `texmf/`.
+  `acmart` class is included in `paper/texmf/`.
 
 The benchmark and verifier sources use `<print>` directly. Older
 libstdc++ releases such as the GCC 11 system compiler used on some
@@ -68,13 +69,14 @@ extractor binaries.
 
 ## Compiling the benchmark
 
-The benchmark sources include headers from the `ipt/` and
-`benchmark/` directories and use the C++23 standard-library headers
-`<format>` and `<print>`, so the repository root must be on the
-include path and the compiler/library combination must provide those
-headers.  In normal use you do not invoke the compiler directly; the
-Makefile builds one binary per scenario in `build/benchmark/` and
-links it against the once-built `build/benchmark/libroaring.a`.
+The benchmark sources include headers from the `src/ipt/` and
+`src/benchmark/` directories and use the C++23 standard-library
+headers `<format>` and `<print>`, so `src/` must be on the include
+path and the compiler/library combination must provide those headers.
+In normal use you do not invoke the compiler directly; the Makefile
+builds one binary per scenario in
+`build/src-layout/<platform>/benchmark/` and links it against the
+once-built `build/src-layout/<platform>/benchmark/libroaring.a`.
 
 If your default compiler does not provide `<print>`, both
 `make verify` and `make benchmark*` fail at compile time before any
@@ -84,17 +86,18 @@ targets.
 If you want to build a single scenario by hand the invocation is:
 
 ```sh
-cc  -std=c11   -O3 -DNDEBUG -I. -c third_party/CRoaring/roaring.c \
-      -o build/benchmark/roaring.o
-ar rcs build/benchmark/libroaring.a build/benchmark/roaring.o
-g++ -std=c++23 -O3 -DNDEBUG -I. \
+cc  -std=c11   -O3 -DNDEBUG -Isrc -c src/third_party/CRoaring/roaring.c \
+  -o build/src-layout/<platform>/benchmark/roaring.o
+ar rcs build/src-layout/<platform>/benchmark/libroaring.a \
+  build/src-layout/<platform>/benchmark/roaring.o
+g++ -std=c++23 -O3 -DNDEBUG -Isrc \
     -DIPT_BENCHMARK_CACHE_CUBOID_SIZE=0 \
     -DIPT_BENCHMARK_CACHE_RULER_SIZE=1 \
     -DIPT_BENCHMARK_CACHE_ENTRY_END=1 \
     -DIPT_BENCHMARK_CACHE_ENTRY_LUB=0 \
-    benchmark/scenarios/multiple-survey-2-l-cache-dependent.cpp \
-    build/benchmark/libroaring.a \
-    -o build/benchmark/multiple-survey-2-l-cache-dependent-c0r1e1l0
+    src/benchmark/scenarios/multiple-survey-2-l-cache-dependent.cpp \
+    build/src-layout/<platform>/benchmark/libroaring.a \
+    -o build/src-layout/<platform>/benchmark/multiple-survey-2-l-cache-dependent-c0r1e1l0
 ```
 
 ### Compile-time switches
@@ -122,7 +125,7 @@ Seed count and `pos_all` / `at_all` query cap are now hard-coded per
 scenario binary (30 seeds for the grid sweep, 5 seeds for the
 structured scenarios, 10000-query cap for the heavy baselines and
 100000 elsewhere).  Override per-binary by editing the corresponding
-file under `benchmark/scenarios/`.
+file under `src/benchmark/scenarios/`.
 
 ## Running the benchmarks
 
@@ -158,7 +161,7 @@ first, then runs the cache-dependent, cache-independent, stress,
 storage, and `pos-mix` suites sequentially in a fixed order so that
 the aggregated text files are deterministic.
 
-`make verify` compiles and runs `verify.cpp` for every combination of
+`make verify` compiles and runs `src/verify.cpp` for every combination of
 the four cache flags (2⁴ = 16) without `-DNDEBUG`, so assertions stay
 enabled. It only runs the verifier paths (intersect, corner-steal,
 restrict, storage round-trip), not the full benchmark scenarios.
@@ -196,11 +199,12 @@ assertions and emits the same result groups as before:
   reference cache combination.
 
 The `roaring` baseline is implemented on top of CRoaring v4.6.1, which
-is vendored unmodified under `third_party/CRoaring/` (dual Apache-2.0 /
-MIT licensed; see `third_party/CRoaring/LICENSE`). The Makefile
-compiles `third_party/CRoaring/roaring.c` once into
-`build/benchmark/libroaring.a` and links every scenario binary against
-it; no system installation of CRoaring is required.
+is vendored unmodified under `src/third_party/CRoaring/` (dual
+Apache-2.0 / MIT licensed; see `src/third_party/CRoaring/LICENSE`).
+The Makefile compiles `src/third_party/CRoaring/roaring.c` once into
+`build/src-layout/<platform>/benchmark/libroaring.a` and links every
+scenario binary against it; no system installation of CRoaring is
+required.
 
 Set `CXX` to override the compiler:
 
@@ -219,14 +223,15 @@ Once the repository contains the result directories used by the paper:
 make -j$(nproc) paper
 ```
 
-This does not rerun the benchmarks.  It only extracts data from the
-files in `results/`, renders the gnuplot figures, regenerates the
-summary tables in `generated/`, builds the bibliography, and compiles
-the paper.  The extraction scripts select the result directories and
-files expected by the paper, so additional result directories are
-ignored unless they match those selection patterns.  The benchmark
-binary is therefore used only to produce or refresh raw result files.
-The `-jX` form is recommended here, for example `make -j8 paper` or
+This does not rerun the benchmarks. It only extracts data from the
+files in `results/`, renders the gnuplot figures from `results/plot/`,
+regenerates the summary tables in `generated/`, builds the
+bibliography from `paper/IPT.bib`, and compiles `paper/IPT.tex`. The
+extraction scripts select the result directories and files expected by
+the paper, so additional result directories are ignored unless they
+match the `results/os_*` platform naming pattern. The benchmark binary
+is therefore used only to produce or refresh raw result files. The
+`-jX` form is recommended here, for example `make -j8 paper` or
 `make -j$(nproc) paper`, because extractor compilation and gnuplot
 figure generation are parallelized by the Makefile. The final
 `pdflatex` and `bibtex` stages remain ordered by dependencies. The

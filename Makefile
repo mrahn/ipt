@@ -4,8 +4,21 @@ JOBS          ?= $(shell nproc)
 EXTRACT_CXXFLAGS ?= -std=c++23 -O2 -Wall -Wextra
 EXTRACT_LDFLAGS  ?=
 
-TEXENV  = TEXINPUTS=".:./texmf/:" \
-          BSTINPUTS=".:./texmf/:"
+SRC_DIR           := $(if $(wildcard src),src,.)
+PAPER_DIR         := $(if $(wildcard paper),paper,.)
+PLOT_DIR          := $(if $(wildcard results/plot),results/plot,plot)
+BENCHMARK_SRC_DIR := $(SRC_DIR)/benchmark
+SCENARIO_SRC_DIR  := $(BENCHMARK_SRC_DIR)/scenarios
+VERIFY_SRC        := $(SRC_DIR)/verify.cpp
+THIRD_PARTY_DIR   := $(SRC_DIR)/third_party
+PAPER_TEX         := $(PAPER_DIR)/IPT.tex
+PAPER_BIB         := $(PAPER_DIR)/IPT.bib
+TEXMF_DIR         := $(PAPER_DIR)/texmf
+BUILD_LAYOUT_TAG  := $(if $(filter src,$(SRC_DIR)),src-layout,root-layout)
+
+TEXENV  = TEXINPUTS=".:$(PAPER_DIR)/:$(TEXMF_DIR)/:" \
+		  BSTINPUTS=".:$(TEXMF_DIR)/:" \
+		  BIBINPUTS=".:$(PAPER_DIR)/:"
 
 # Result directory: results/os_<id>__kernel_<id>__cpu_<id>__compiler_<id>.
 # Each component is lower-cased and reduced to [a-z0-9._-].  The CPU
@@ -14,7 +27,7 @@ TEXENV  = TEXINPUTS=".:./texmf/:" \
 # /etc/os-release ($ID-$VERSION_ID, falling back to $PRETTY_NAME or
 # $NAME); the kernel from `uname -r`; and the compiler from the first
 # line of `$(CXX) --version`.  The same tag is used to give every
-# host its own build/<platform>/benchmark/ directory so that two
+# host its own build/<layout>/<platform>/benchmark/ directory so that two
 # concurrent `make benchmark` invocations on a shared checkout do not
 # clobber each other's binaries.
 RESULT_DIR := $(shell \
@@ -59,12 +72,12 @@ EXTRA_EXTRACTORS := \
 
 EXTRACT_NAMES := $(PLOT_NAMES) $(EXTRA_EXTRACTORS)
 EXTRACT_BIN_DIR := generated/extract
-EXTRACT_HEADER  := plot/IPTPlot.hpp
+EXTRACT_HEADER  := $(PLOT_DIR)/IPTPlot.hpp
 EXTRACT_BINS    := $(patsubst %,$(EXTRACT_BIN_DIR)/%,$(EXTRACT_NAMES))
 
 # Prefer the newer Rocky 9.7 i7 reruns on kernel 7 over the older
 # kernel 6.19 snapshots.
-RESULT_DIRS_ALL := $(sort $(patsubst %/,%,$(wildcard results/*/)))
+RESULT_DIRS_ALL := $(sort $(patsubst %/,%,$(wildcard results/os_*/)))
 RESULT_DIRS := $(filter-out results/os_rocky-9.7__kernel_6.19.%__cpu_13th-gen-intel-r-core-tm-i7-1370p__compiler_%,$(RESULT_DIRS_ALL))
 RESULT_FILES := $(sort $(foreach dir,$(RESULT_DIRS),$(wildcard $(dir)/*.txt)))
 
@@ -84,7 +97,7 @@ help:
 	@echo '                                   generated summary tables only.'
 	@echo ''
 	@echo 'Verification (assertions enabled, no NDEBUG):'
-	@echo '  verify                           Build and run verify.cpp for all 16'
+	@echo '  verify                           Build and run the verifier for all 16'
 	@echo '                                   cache-flag combinations in parallel.'
 	@echo '  verify-<combination>             Single combination, e.g. verify-c0r1e1l0.'
 	@echo ''
@@ -135,19 +148,20 @@ paper: IPT.pdf
 
 # -- benchmark binaries -----------------------------------------------
 #
-# Each scenario .cpp in benchmark/scenarios/ becomes its own binary.
-# All binaries share benchmark/Common.hpp (algorithm machinery) and
-# benchmark/Scenarios.hpp (data factories).  No env vars; the cache
+# Each scenario .cpp in $(SCENARIO_SRC_DIR) becomes its own binary.
+# All binaries share $(BENCHMARK_SRC_DIR)/Common.hpp (algorithm
+# machinery) and $(BENCHMARK_SRC_DIR)/Scenarios.hpp (data factories).
+# No env vars; the cache
 # combination is selected at compile time via -DIPT_BENCHMARK_CACHE_*.
 #
-BENCHMARK_DIR        := $(CURDIR)/build/$(PLATFORM_TAG)/benchmark
+BENCHMARK_DIR        := $(CURDIR)/build/$(BUILD_LAYOUT_TAG)/$(PLATFORM_TAG)/benchmark
 
-BENCHMARK_CXXFLAGS   := -std=c++23 -O3 -DNDEBUG -I.
+BENCHMARK_CXXFLAGS   := -std=c++23 -O3 -DNDEBUG -I$(SRC_DIR)
 BENCHMARK_LDFLAGS    :=
 
 ROARING_LIB      := $(BENCHMARK_DIR)/libroaring.a
 ROARING_OBJ      := $(BENCHMARK_DIR)/roaring.o
-ROARING_SRC      := third_party/CRoaring/roaring.c
+ROARING_SRC      := $(THIRD_PARTY_DIR)/CRoaring/roaring.c
 
 # Compiler-generated dependency files for verify and benchmark
 # binaries.  These capture transitive includes such as *.ipp files so
@@ -233,14 +247,14 @@ $(BENCHMARK_DIR):
 	mkdir -p $@
 
 $(ROARING_OBJ): $(ROARING_SRC) | $(BENCHMARK_DIR)
-	$(CC) -std=c11 -O3 -DNDEBUG -I. -c $< -o $@
+	$(CC) -std=c11 -O3 -DNDEBUG -I$(SRC_DIR) -c $< -o $@
 
 $(ROARING_LIB): $(ROARING_OBJ)
 	ar rcs $@ $<
 
 # ---- verify ---------------------------------------------------------
 #
-# verify-c<cuboid>r<r>e<e>l<l> compiles verify.cpp WITHOUT NDEBUG so
+# verify-c<cuboid>r<r>e<e>l<l> compiles $(VERIFY_SRC) WITHOUT NDEBUG so
 # the verify::* assertions are active, then runs it.  `make verify`
 # runs all 16 in parallel via $(MAKE) -j.
 #
@@ -250,8 +264,8 @@ define VERIFY_RULE
 .PHONY: verify-$(1)
 verify-$(1): $$(BENCHMARK_DIR)/verify-$(1)
 	$$<
-$$(BENCHMARK_DIR)/verify-$(1) $$(BENCHMARK_DIR)/verify-$(1).d &: verify.cpp benchmark/Common.hpp benchmark/Verify.hpp Makefile $$(ROARING_LIB) | $$(BENCHMARK_DIR)
-	$$(CXX) -std=c++23 -O3 -I. $$(call CACHE_DEFINES_FOR,$(1)) -MMD -MP -MT $$(BENCHMARK_DIR)/verify-$(1) -MF $$(BENCHMARK_DIR)/verify-$(1).d $$< $$(ROARING_LIB) -o $$(BENCHMARK_DIR)/verify-$(1)
+$$(BENCHMARK_DIR)/verify-$(1) $$(BENCHMARK_DIR)/verify-$(1).d &: $(VERIFY_SRC) $(BENCHMARK_SRC_DIR)/Common.hpp $(BENCHMARK_SRC_DIR)/Verify.hpp Makefile $$(ROARING_LIB) | $$(BENCHMARK_DIR)
+	$$(CXX) -std=c++23 -O3 -I$(SRC_DIR) $$(call CACHE_DEFINES_FOR,$(1)) -MMD -MP -MT $$(BENCHMARK_DIR)/verify-$(1) -MF $$(BENCHMARK_DIR)/verify-$(1).d $$< $$(ROARING_LIB) -o $$(BENCHMARK_DIR)/verify-$(1)
 endef
 $(foreach combination,$(ALL_COMBINATIONS),$(eval $(call VERIFY_RULE,$(combination))))
 
@@ -261,9 +275,9 @@ $(foreach combination,$(ALL_COMBINATIONS),$(eval $(call VERIFY_RULE,$(combinatio
 #   <scenario> e.g. multiple-survey-2-l
 #   <axis>     cache-dependent | cache-independent | storage
 #
-# Build rule: <basename>-<combination> -> compiles benchmark/scenarios/<basename>.cpp
+# Build rule: <basename>-<combination> -> compiles $(SCENARIO_SRC_DIR)/<basename>.cpp
 define SCENARIO_BUILD_RULE
-$$(BENCHMARK_DIR)/$(1)-$(2) $$(BENCHMARK_DIR)/$(1)-$(2).d &: benchmark/scenarios/$(1).cpp benchmark/Common.hpp benchmark/Scenarios.hpp Makefile $$(ROARING_LIB) | $$(BENCHMARK_DIR)
+$$(BENCHMARK_DIR)/$(1)-$(2) $$(BENCHMARK_DIR)/$(1)-$(2).d &: $(SCENARIO_SRC_DIR)/$(1).cpp $(BENCHMARK_SRC_DIR)/Common.hpp $(BENCHMARK_SRC_DIR)/Scenarios.hpp Makefile $$(ROARING_LIB) | $$(BENCHMARK_DIR)
 	$$(CXX) $$(BENCHMARK_CXXFLAGS) $$(call CACHE_DEFINES_FOR,$(2)) -MMD -MP -MT $$(BENCHMARK_DIR)/$(1)-$(2) -MF $$(BENCHMARK_DIR)/$(1)-$(2).d $$< $$(ROARING_LIB) $$(BENCHMARK_LDFLAGS) -o $$(BENCHMARK_DIR)/$(1)-$(2)
 endef
 
@@ -426,7 +440,7 @@ benchmark: benchmark-build | $(RESULT_DIR)
 
 # -- plots: tsv extraction then gnuplot -------------------------------
 
-TSVS := $(patsubst %,plot/%.tsv,$(PLOT_NAMES))
+TSVS := $(patsubst %,$(PLOT_DIR)/%.tsv,$(PLOT_NAMES))
 PLOTS := $(foreach p,$(PLOT_NAMES),generated/$(p).tex generated/$(p).pdf)
 
 # Compile each extractor on the fly. They share IPTPlot.hpp; touching
@@ -435,18 +449,18 @@ PLOTS := $(foreach p,$(PLOT_NAMES),generated/$(p).tex generated/$(p).pdf)
 $(EXTRACT_BIN_DIR):
 	mkdir -p $@
 
-$(EXTRACT_BIN_DIR)/%: plot/%.cpp plot/IPTPlot.cpp $(EXTRACT_HEADER) | $(EXTRACT_BIN_DIR)
-	$(CXX) $(EXTRACT_CXXFLAGS) $(EXTRACT_LDFLAGS) -o $@ $< plot/IPTPlot.cpp
+$(EXTRACT_BIN_DIR)/%: $(PLOT_DIR)/%.cpp $(PLOT_DIR)/IPTPlot.cpp $(EXTRACT_HEADER) | $(EXTRACT_BIN_DIR)
+	$(CXX) $(EXTRACT_CXXFLAGS) $(EXTRACT_LDFLAGS) -o $@ $< $(PLOT_DIR)/IPTPlot.cpp
 
 define TSV_RULE
-plot/$(1).tsv: $$(EXTRACT_BIN_DIR)/$(1) $$(RESULT_FILES)
+$(PLOT_DIR)/$(1).tsv: $$(EXTRACT_BIN_DIR)/$(1) $$(RESULT_FILES)
 	$$< > $$@
 endef
 $(foreach p,$(PLOT_NAMES),$(eval $(call TSV_RULE,$(p))))
 
 define PLOT_RULE
 generated/$(1).tex generated/$(1).pdf &: \
-    plot/$(1).gp plot/$(1).tsv | generated
+    $(PLOT_DIR)/$(1).gp $(PLOT_DIR)/$(1).tsv | generated
 	gnuplot $$<
 endef
 $(foreach p,$(PLOT_NAMES),$(eval $(call PLOT_RULE,$(p))))
@@ -478,12 +492,12 @@ generated:
 
 # -- paper: bibtex + pdflatex ----------------------------------------
 
-IPT.pdf: IPT.tex IPT.bbl $(PLOTS) $(wildcard texmf/*)
-	$(TEXENV) pdflatex -halt-on-error IPT.tex
-	$(TEXENV) pdflatex -halt-on-error IPT.tex
+IPT.pdf: $(PAPER_TEX) IPT.bbl $(PLOTS) $(wildcard $(TEXMF_DIR)/*)
+	$(TEXENV) pdflatex -halt-on-error $(PAPER_TEX)
+	$(TEXENV) pdflatex -halt-on-error $(PAPER_TEX)
 
-IPT.bbl: IPT.bib IPT.tex $(PLOTS) texmf/ACM-Reference-Format.bst
-	$(TEXENV) pdflatex -halt-on-error IPT.tex
+IPT.bbl: $(PAPER_BIB) $(PAPER_TEX) $(PLOTS) $(TEXMF_DIR)/ACM-Reference-Format.bst
+	$(TEXENV) pdflatex -halt-on-error $(PAPER_TEX)
 	$(TEXENV) bibtex IPT
 
 # -- clean ------------------------------------------------------------
