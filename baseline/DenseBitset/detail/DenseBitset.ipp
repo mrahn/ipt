@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <baseline/detail/select.hpp>
 #include <baseline/enumerate.hpp>
 #include <bit>
 #include <cassert>
@@ -218,30 +219,128 @@ namespace ipt::baseline
   }
 
   template<std::size_t D, dense_bitset::Storage<D> S>
-    auto DenseBitset<D, S>::select
+    auto DenseBitset<D, S>::restrict
       ( Cuboid<D> query
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<DenseBitset<D>>
   {
     auto const bits {_storage.bits()};
-    auto const grid_cuboid {to_ipt_cuboid (_grid)};
-    auto const intersection {grid_cuboid.intersect (query)};
+    auto const shape_statistics {detail::query_shape_statistics (_grid, query)};
 
-    if (!intersection)
+    if (!shape_statistics)
     {
-      co_return;
+      return std::nullopt;
     }
 
-    for (auto const& point : enumerate (*intersection))
-    {
-      auto const linear {_grid.UNCHECKED_pos (point)};
-      auto const word_i {word (linear)};
-      auto const bit_i {bit (linear)};
+    auto const& statistics {*shape_statistics};
+    auto restricted
+      {DenseBitset<D> {detail::grid_from_cuboid (statistics.intersection)}};
+    auto const use_pointwise_probe
+      { statistics.point_count <= Index {128}
+     || statistics.points_per_interval
+          < static_cast<Index> (bits_per_word / 2)
+      };
 
-      if ((bits[word_i] & (Word {1} << bit_i)) != 0)
+    if (use_pointwise_probe)
+    {
+      for (auto const& point : enumerate (statistics.intersection))
       {
-        co_yield singleton_cuboid (point);
+        auto const linear {_grid.UNCHECKED_pos (point)};
+        auto const word_index {word (linear)};
+        auto const bit_index {bit (linear)};
+
+        if ((bits[word_index] & (Word {1} << bit_index)) != 0)
+        {
+          restricted.add (point);
+        }
       }
     }
+    else
+    {
+      auto const& last_ruler {statistics.intersection.ruler (D - 1)};
+      auto const last_grid_stride {_grid.strides()[D - 1]};
+
+      assert (Coordinate {0} < last_grid_stride);
+      assert (last_ruler.stride() % last_grid_stride == Coordinate {0});
+
+      auto const last_linear_step
+        { last_ruler.size() == Index {1}
+            ? Index {1}
+            : static_cast<Index> (last_ruler.stride() / last_grid_stride)
+        };
+
+      for ( auto const& [first, last]
+          : detail::query_linear_intervals (_grid, statistics.intersection)
+          )
+      {
+        if (last_linear_step == Index {1})
+        {
+          auto const first_word {word (first)};
+          auto const last_word {word (last)};
+
+          for (auto word_index {first_word}; word_index <= last_word; ++word_index)
+          {
+            auto masked {bits[word_index]};
+
+            if (word_index == first_word)
+            {
+              auto const first_bit {bit (first)};
+              auto const lower_mask
+                { first_bit == 0
+                    ? Word {0}
+                    : (Word {1} << first_bit) - 1
+                };
+              masked &= ~lower_mask;
+            }
+
+            if (word_index == last_word)
+            {
+              auto const last_bit {bit (last)};
+              auto const upper_mask
+                { last_bit + 1 == bits_per_word
+                    ? std::numeric_limits<Word>::max()
+                    : (Word {1} << (last_bit + 1)) - 1
+                };
+              masked &= upper_mask;
+            }
+
+            while (masked != 0)
+            {
+              auto const bit_offset
+                {static_cast<Index> (std::countr_zero (masked))};
+              auto const linear
+                { static_cast<Index> (word_index)
+                  * static_cast<Index> (bits_per_word)
+                  + bit_offset
+                };
+
+              restricted.add (_grid.at (linear));
+              masked &= masked - 1;
+            }
+          }
+
+          continue;
+        }
+
+        for (auto position {Index {0}}; position < last_ruler.size(); ++position)
+        {
+          auto const linear {first + position * last_linear_step};
+          auto const word_index {word (linear)};
+          auto const bit_index {bit (linear)};
+
+          if ((bits[word_index] & (Word {1} << bit_index)) != 0)
+          {
+            restricted.add (_grid.at (linear));
+          }
+        }
+      }
+    }
+
+    if (restricted.size() == Index {0})
+    {
+      return std::nullopt;
+    }
+
+    return std::move (restricted).build();
   }
 
   template<std::size_t D, dense_bitset::Storage<D> S>

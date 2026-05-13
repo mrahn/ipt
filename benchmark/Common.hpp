@@ -820,23 +820,41 @@ namespace
     return engine();
   }
 
-  // Densities used for the per-baseline selection/restriction sweep.
+  // Densities used for the per-baseline restriction sweep.
   // Each density d gives queries that target d * |grid| points.
-  inline constexpr auto select_densities
+  inline constexpr auto restrict_densities
     { std::array<double, 4> {0.001, 0.01, 0.1, 1.0} };
 
-  inline constexpr auto select_density_tags
+  inline constexpr auto restrict_density_tags
     { std::array<std::string_view, 4>
       {"d0001", "d001", "d01", "d1"}
     };
 
-  inline constexpr auto select_queries_per_density
+  inline constexpr auto restrict_queries_per_density
     {std::size_t {32}};
+
+  template<std::size_t D>
+    [[nodiscard]] auto query_selects_any
+      ( std::span<Point<D> const> points
+      , Cuboid<D> const&          query
+      ) -> bool
+  {
+    auto const lo {std::ranges::lower_bound (points, query.glb())};
+    auto const hi {std::ranges::upper_bound (points, query.lub())};
+
+    return std::ranges::find_if
+      ( std::ranges::subrange {lo, hi}
+      , [&] (Point<D> const& point) noexcept
+        {
+          return query.contains (point);
+        }
+      ) != hi;
+  }
 
   // Build a query cuboid covering an axis-aligned sub-bbox of `world`
   // whose target volume is `density * world.size()`.
   template<std::size_t D, typename RandomEngine>
-    [[nodiscard]] auto random_select_query
+    [[nodiscard]] auto random_restrict_query
       ( ipt::Cuboid<D> const& world
       , double density
       , RandomEngine& random_engine
@@ -907,109 +925,113 @@ namespace
       );
   }
 
-  // Per-baseline selection + restriction microbenchmark.
+  template<std::size_t D, typename RandomEngine>
+    [[nodiscard]] auto sample_nonempty_restrict_queries
+      ( Cuboid<D> const&           world
+      , double                     density
+      , std::span<Point<D> const>  reference_points
+      , std::size_t                query_count
+      , RandomEngine&              random_engine
+      ) -> std::vector<Cuboid<D>>
+  {
+    auto queries {std::vector<Cuboid<D>> {}};
+    auto attempts {std::size_t {0}};
+    auto const attempt_limit {query_count * std::size_t {4096}};
+
+    queries.reserve (query_count);
+
+    while (queries.size() < query_count)
+    {
+      if (! (attempts < attempt_limit))
+      {
+        throw std::runtime_error
+          { std::format
+              ( "sample_nonempty_restrict_queries: unable to sample {} non-empty queries at density {}"
+              , query_count
+              , density
+              )
+          };
+      }
+
+      auto query {random_restrict_query (world, density, random_engine)};
+
+      if (query_selects_any (reference_points, query))
+      {
+        queries.push_back (std::move (query));
+      }
+
+      attempts += 1;
+    }
+
+    return queries;
+  }
+
+  // Per-baseline native restriction microbenchmark.
   //
-  // For each density tier this prints four lines using the same
+  // For each density tier this prints three lines using the same
   // {context} algorithm=NAME metric=... format as the existing query
   // measurements:
   //
-  //   metric=select_<tag>            ns_per_select
-  //   metric=restrict_<tag>          ns_per_restrict
-  //   metric=select_<tag>_cuboids    value=<sum of yielded cuboids>
-  //   metric=select_<tag>_points     value=<sum of yielded points>
+  //   metric=restrict_<tag>          ns_per_native_restrict
+  //   metric=restrict_<tag>_points   value=<sum of restricted points>
+  //   metric=restrict_<tag>_bytes    value=<sum of restricted bytes>
   template<std::size_t D, typename Structure>
-    auto run_select_sweep
+    auto run_restrict_sweep
       ( BenchmarkContext<D> const& context
       , std::string_view           algorithm
       , Structure const&           structure
+      , std::span<Point<D> const>  reference_points
       , std::uint64_t&             sink
       ) -> void
   {
     auto const world {to_ipt_cuboid (context.grid)};
-    auto random_engine {std::mt19937_64 {context.seed ^ 0x53'4C'43'54ULL}};
+    auto random_engine {std::mt19937_64 {context.seed ^ 0x52'45'53'54ULL}};
 
     for (auto density_index {std::size_t {0}};
-         density_index < select_densities.size();
+         density_index < restrict_densities.size();
          ++density_index)
     {
-      auto const density {select_densities[density_index]};
-      auto const tag {select_density_tags[density_index]};
-
-      auto queries {std::vector<ipt::Cuboid<D>> {}};
-      queries.reserve (select_queries_per_density);
-      for ( auto query_index {std::size_t {0}}
-          ; query_index < select_queries_per_density
-          ; ++query_index
+      auto const density {restrict_densities[density_index]};
+      auto const tag {restrict_density_tags[density_index]};
+      auto queries
+        { sample_nonempty_restrict_queries
+          ( world
+          , density
+          , reference_points
+          , restrict_queries_per_density
+          , random_engine
           )
-      {
-        queries.push_back (random_select_query (world, density, random_engine));
-      }
-
-      auto total_cuboids {std::size_t {0}};
-      auto total_points {Index {0}};
-      auto cuboid_counts
-        {std::vector<std::size_t> (queries.size(), 0)};
-
-      auto const select_timing
-        { Timing
-          { sink
-          , queries.size()
-          , "select"
-          , [&] () noexcept -> std::uint64_t
-            {
-              auto checksum {std::uint64_t {0}};
-
-              for ( auto query_index {std::size_t {0}}
-                  ; query_index < queries.size()
-                  ; ++query_index
-                  )
-              {
-                auto cuboid_count {std::size_t {0}};
-                for ( auto const& cuboid
-                    : structure.select (queries[query_index])
-                    )
-                {
-                  cuboid_count += 1;
-                  total_points += cuboid.size();
-                  checksum
-                    += static_cast<std::uint64_t> (cuboid.size());
-                }
-                cuboid_counts[query_index] = cuboid_count;
-                total_cuboids += cuboid_count;
-              }
-
-              return checksum;
-            }
-          }
         };
+      auto total_points {Index {0}};
+      auto total_bytes {std::size_t {0}};
 
       auto const restrict_timing
         { Timing
           { sink
           , queries.size()
           , "restrict"
-          , [&] () noexcept -> std::uint64_t
+          , [&] () -> std::uint64_t
             {
               auto checksum {std::uint64_t {0}};
 
-              for ( auto query_index {std::size_t {0}}
-                  ; query_index < queries.size()
-                  ; ++query_index
-                  )
+              for (auto const& query : queries)
               {
-                if (cuboid_counts[query_index] == 0)
+                auto restricted {structure.restrict (query)};
+
+                if (!restricted)
                 {
-                  continue;
+                  throw std::runtime_error
+                    { std::format
+                        ( "{}::restrict returned empty for a sampled non-empty query"
+                        , algorithm
+                        )
+                    };
                 }
 
-                auto restricted
-                  { ipt::IPT<D>
-                    { std::from_range
-                    , structure.select (queries[query_index])
-                    }
-                  };
+                total_points += restricted->size();
+                total_bytes += restricted->bytes();
                 checksum
-                  += static_cast<std::uint64_t> (restricted.size());
+                  += static_cast<std::uint64_t> (restricted->size());
               }
 
               return checksum;
@@ -1017,20 +1039,13 @@ namespace
           }
         };
 
-      auto const select_metric
-        {std::format ("select_{}", tag)};
       auto const restrict_metric
         {std::format ("restrict_{}", tag)};
-      auto const cuboids_metric
-        {std::format ("select_{}_cuboids", tag)};
       auto const points_metric
-        {std::format ("select_{}_points", tag)};
+        {std::format ("restrict_{}_points", tag)};
+      auto const bytes_metric
+        {std::format ("restrict_{}_bytes", tag)};
 
-      std::print
-        ( "{} {}\n"
-        , Measurement<D> {context, algorithm, select_metric}
-        , select_timing
-        );
       std::print
         ( "{} {}\n"
         , Measurement<D> {context, algorithm, restrict_metric}
@@ -1038,13 +1053,13 @@ namespace
         );
       std::print
         ( "{} value={}\n"
-        , Measurement<D> {context, algorithm, cuboids_metric}
-        , total_cuboids
+        , Measurement<D> {context, algorithm, points_metric}
+        , total_points
         );
       std::print
         ( "{} value={}\n"
-        , Measurement<D> {context, algorithm, points_metric}
-        , total_points
+        , Measurement<D> {context, algorithm, bytes_metric}
+        , total_bytes
         );
     }
   }
@@ -1103,7 +1118,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, create::GreedyPlusMerge<D>::name(), greedy_merge.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , create::GreedyPlusMerge<D>::name()
+        , greedy_merge.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     {
@@ -1124,7 +1145,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, create::GreedyPlusCombine<D>::name(), greedy_combine.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , create::GreedyPlusCombine<D>::name()
+        , greedy_combine.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (benchmark_regular_baseline)
@@ -1168,7 +1195,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, create::Regular<D>::name(), regular_queryable, sink);
+      run_restrict_sweep
+        ( context
+        , create::Regular<D>::name()
+        , regular_queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
   }
 
@@ -1220,7 +1253,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, SortedPoints<D>::name(), sorted_points.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , SortedPoints<D>::name()
+        , sorted_points.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (include_light)
@@ -1239,7 +1278,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, LexRun<D>::name(), lex_run.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , LexRun<D>::name()
+        , lex_run.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (include_light)
@@ -1258,7 +1303,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, RowCSR<D, 1>::name(), row_csr_k1.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , RowCSR<D, 1>::name()
+        , row_csr_k1.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (include_light)
@@ -1279,7 +1330,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, RowCSR<D, D - 1>::name(), row_csr_km.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , RowCSR<D, D - 1>::name()
+        , row_csr_km.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
       }
     }
 
@@ -1303,7 +1360,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, DenseBitset<D>::name(), dense_bitset.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , DenseBitset<D>::name()
+        , dense_bitset.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (include_heavy)
@@ -1326,7 +1389,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, BlockBitmap<D>::name(), block_bitmap.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , BlockBitmap<D>::name()
+        , block_bitmap.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (include_heavy)
@@ -1349,7 +1418,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, Roaring<D>::name(), roaring_baseline.queryable, sink);
+      run_restrict_sweep
+        ( context
+        , Roaring<D>::name()
+        , roaring_baseline.queryable
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
 
     if (include_light && benchmark_regular_baseline)
@@ -1382,7 +1457,13 @@ namespace
           , index_sample, all_index_sample
           }
         );
-      run_select_sweep (context, Grid<D>::name(), context.grid, sink);
+      run_restrict_sweep
+        ( context
+        , Grid<D>::name()
+        , context.grid
+        , std::span<Point<D> const> {data.points()}
+        , sink
+        );
     }
   }
 
@@ -1401,6 +1482,7 @@ namespace
       , std::span<Point<D> const>  all_point_sample
       , std::span<Index const>     index_sample
       , std::span<Index const>     all_index_sample
+      , std::span<Point<D> const>  reference_points
       , WriteFn&&                  write_fn
       , LoadFn&&                   load_fn
       ) -> void
@@ -1498,24 +1580,39 @@ namespace
       auto first_engine
         {std::mt19937_64 {context.seed ^ 0x46'49'52'53ULL}};
       auto const first_query
-        {random_select_query (world, 0.001, first_engine)};
-      auto const first_select_duration
+        { sample_nonempty_restrict_queries
+          ( world
+          , 0.001
+          , reference_points
+          , std::size_t {1}
+          , first_engine
+          )
+          .front()
+        };
+      auto const first_restrict_duration
         { time_once
             ( [&]
               {
-                auto checksum {std::uint64_t {0}};
-                for (auto const& cuboid : mmap_instance.select (first_query))
+                auto const restricted {mmap_instance.restrict (first_query)};
+
+                if (!restricted)
                 {
-                  checksum += static_cast<std::uint64_t> (cuboid.size());
+                  throw std::runtime_error
+                    { std::format
+                        ( "{}::restrict returned empty for a sampled non-empty query"
+                        , algorithm
+                        )
+                    };
                 }
-                sink += checksum;
+
+                sink += static_cast<std::uint64_t> (restricted->size());
               }
             )
         };
       std::print
-        ( "{} algorithm={} metric=first_select {}\n"
+        ( "{} algorithm={} metric=first_restrict {}\n"
         , context, algorithm
-        , Timing {first_select_duration, std::size_t {1}, "select"}
+        , Timing {first_restrict_duration, std::size_t {1}, "restrict"}
         );
     }
 
@@ -1535,8 +1632,14 @@ namespace
         }
       );
 
-    // 7. select sweep on the mmap'd instance.
-    run_select_sweep (context, algorithm, mmap_instance, sink);
+    // 7. restrict sweep on the mmap'd instance.
+    run_restrict_sweep
+      ( context
+      , algorithm
+      , mmap_instance
+      , reference_points
+      , sink
+      );
 
     auto ec {std::error_code {}};
     std::filesystem::remove (path, ec);
@@ -2012,6 +2115,7 @@ namespace
         , path_for ("ipt"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::storage::write (path, built.queryable, descriptor); }
         , [] (auto& slot, auto const& path)
@@ -2027,6 +2131,7 @@ namespace
         , path_for ("sorted-points"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::sorted_points::write<D>
               (path, built.queryable.storage(), descriptor); }
@@ -2046,6 +2151,7 @@ namespace
         , path_for ("dense-bitset"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::dense_bitset::write<D>
               (path, built.queryable.storage(), descriptor); }
@@ -2065,6 +2171,7 @@ namespace
         , path_for ("block-bitmap"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::block_bitmap::write<D>
               (path, built.queryable.storage(), descriptor); }
@@ -2084,6 +2191,7 @@ namespace
         , path_for ("roaring"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::roaring::write<D>
               (path, built.queryable.storage(), descriptor); }
@@ -2100,6 +2208,7 @@ namespace
         , path_for ("lex-run"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::lex_run::write<D>
               (path, built.queryable.storage(), descriptor); }
@@ -2116,6 +2225,7 @@ namespace
         , path_for ("row-csr-k1"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::row_csr::write<D, 1>
               (path, built.queryable.storage(), descriptor); }
@@ -2133,6 +2243,7 @@ namespace
         , path_for ("row-csr-km"), sink
         , point_sample, all_point_sample
         , index_sample, all_index_sample
+        , std::span<Point<D> const> {data.points()}
         , [&] (auto const& path, auto descriptor)
           { ipt::baseline::row_csr::write<D, D - 1>
               (path, built.queryable.storage(), descriptor); }

@@ -4,7 +4,6 @@
 #include <baseline/Origin.hpp>
 #include <baseline/Strides.hpp>
 #include <cstddef>
-#include <generator>
 #include <ipt/Cuboid.hpp>
 #include <ipt/Index.hpp>
 #include <ipt/Point.hpp>
@@ -38,9 +37,9 @@ namespace ipt::baseline
       ;
     [[nodiscard]] auto UNCHECKED_pos (Point<D>) const noexcept -> Index;
 
-    [[nodiscard]] auto select
+    [[nodiscard]] auto restrict
       ( Cuboid<D>
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<Grid>
       ;
 
   private:
@@ -53,15 +52,6 @@ namespace ipt::baseline
   // the same point set.
   template<std::size_t D>
     [[nodiscard]] auto to_ipt_cuboid (Grid<D> const&) -> Cuboid<D>;
-
-  // Selection generator for Grid: at most one cuboid (the
-  // intersection of the grid's intrinsic cuboid with the query).
-  template<std::size_t D>
-    [[nodiscard]] auto grid_select_impl
-      ( Cuboid<D>
-      , Cuboid<D>
-      ) -> std::generator<Cuboid<D>>
-      ;
 }
 
 #include "detail/Grid.ipp"

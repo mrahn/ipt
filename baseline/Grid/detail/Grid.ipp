@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <array>
+#include <baseline/detail/restrict.hpp>
 #include <cstddef>
 #include <functional>
 #include <ipt/Coordinate.hpp>
@@ -240,23 +241,17 @@ namespace ipt::baseline
   }
 
   template<std::size_t D>
-    auto grid_select_impl
-      ( Cuboid<D> grid_cuboid
-      , Cuboid<D> query
-      ) -> std::generator<Cuboid<D>>
-  {
-    if (auto inter {grid_cuboid.intersect (query)})
-    {
-      co_yield std::move (*inter);
-    }
-  }
-
-  template<std::size_t D>
-    auto Grid<D>::select
+    auto Grid<D>::restrict
       ( Cuboid<D> query
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<Grid>
   {
-    return grid_select_impl<D>
-      (to_ipt_cuboid (*this), std::move (query));
+    auto const intersection {to_ipt_cuboid (*this).intersect (query)};
+
+    if (!intersection)
+    {
+      return std::nullopt;
+    }
+
+    return detail::grid_from_cuboid (*intersection);
   }
 }

@@ -6,6 +6,7 @@
 #include <ipt/Coordinate.hpp>
 #include <ipt/Ruler.hpp>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
@@ -256,61 +257,119 @@ namespace ipt::baseline
   }
 
   template<std::size_t D, lex_run::Storage<D> S>
-    auto LexRun<D, S>::select
+    auto LexRun<D, S>::restrict
       ( Cuboid<D> query
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<LexRun<D>>
   {
-    for (auto const& run : _storage.runs())
-    {
-      auto const run_cuboid {make_run_cuboid (run)};
+    auto const runs {_storage.runs()};
+    auto lower_coordinates {std::array<Coordinate, D> {}};
+    auto upper_coordinates {std::array<Coordinate, D> {}};
 
-      if (auto inter {run_cuboid.intersect (query)})
+    std::ranges::transform
+      ( std::views::iota (std::size_t {0}, D)
+      , std::ranges::begin (lower_coordinates)
+      , [&] (auto d) noexcept
+        {
+          return d + 1 == D
+            ? std::numeric_limits<Coordinate>::lowest()
+            : query.ruler (d).begin()
+            ;
+        }
+      );
+
+    std::ranges::transform
+      ( std::views::iota (std::size_t {0}, D)
+      , std::ranges::begin (upper_coordinates)
+      , [&] (auto d) noexcept
+        {
+          return d + 1 == D
+            ? std::numeric_limits<Coordinate>::max()
+            : query.ruler (d).lub()
+            ;
+        }
+      );
+
+    auto const first
+      { std::ranges::lower_bound
+        ( runs
+        , Point<D> {lower_coordinates}
+        , {}
+        , &Run::start
+        )
+      };
+    auto const last
+      { std::ranges::upper_bound
+        ( runs
+        , Point<D> {upper_coordinates}
+        , {}
+        , &Run::start
+        )
+      };
+    auto restricted_storage {lex_run::storage::Vector<D> {}};
+
+    for (auto const& run : std::ranges::subrange {first, last})
+    {
+      auto const prefix_matches
+        { std::ranges::all_of
+          ( std::views::iota (std::size_t {0}, D - 1)
+          , [&] (auto d) noexcept
+            {
+              return query.ruler (d).contains (run.start[d]);
+            }
+          )
+        };
+
+      if (!prefix_matches)
       {
-        co_yield std::move (*inter);
+        continue;
+      }
+
+      auto const run_last_ruler
+        { run.length == 1
+            ? Ruler {typename Ruler::Singleton {run.start[D - 1]}}
+            : Ruler
+              { run.start[D - 1]
+              , run.stride
+              , run.start[D - 1]
+                + static_cast<Coordinate> (run.length) * run.stride
+              }
+        };
+
+      if (auto inter {run_last_ruler.intersect (query.ruler (D - 1))})
+      {
+        auto coordinates {std::array<Coordinate, D> {}};
+
+        for (auto d {std::size_t {0}}; d + 1 < D; ++d)
+        {
+          coordinates[d] = run.start[d];
+        }
+
+        coordinates[D - 1] = inter->begin();
+        restricted_storage.push_back
+          ( Run
+            { Point<D> {coordinates}
+            , inter->size() == Index {1}
+                ? Coordinate {0}
+                : inter->stride()
+            , inter->size()
+            , restricted_storage.total_points()
+            }
+          );
+        restricted_storage.add_total_points (inter->size());
       }
     }
+
+    if (restricted_storage.empty())
+    {
+      return std::nullopt;
+    }
+
+    return LexRun<D> {std::in_place, std::move (restricted_storage)};
   }
 
   template<std::size_t D, lex_run::Storage<D> S>
     auto LexRun<D, S>::storage() const noexcept -> S const&
   {
     return _storage;
-  }
-
-  template<std::size_t D, lex_run::Storage<D> S>
-    auto LexRun<D, S>::make_run_cuboid
-      ( Run const& run
-      ) -> Cuboid<D>
-  {
-    auto last_ruler
-      { run.length == 1
-          ? Ruler {typename Ruler::Singleton {run.start[D - 1]}}
-          : Ruler
-            { run.start[D - 1]
-            , run.stride
-            , run.start[D - 1]
-              + static_cast<Coordinate> (run.length) * run.stride
-            }
-      };
-
-    auto rulers
-      { std::invoke
-        ( [&]<std::size_t... Dimensions>
-            ( std::index_sequence<Dimensions...>
-            )
-          {
-            return std::array<Ruler, D>
-              { Ruler
-                  { typename Ruler::Singleton
-                    {run.start[Dimensions]}
-                  }...
-              , std::move (last_ruler)
-              };
-          }
-        , std::make_index_sequence<D - 1> {}
-        )
-      };
-
-    return Cuboid<D> {std::move (rulers)};
   }
 }

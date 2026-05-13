@@ -2,7 +2,7 @@
 // structured multiple-survey scenarios on the reference platform.
 // Emits a stand-alone LaTeX tabular snippet on stdout summarising per
 // algorithm: bytes on disk, cold first-response latency for
-// pos/at/select, and steady-state mmap-backed pos/at throughput.
+// pos/at/restrict, and steady-state mmap-backed pos/at throughput.
 
 #include "IPTPlot.hpp"
 
@@ -330,9 +330,9 @@ auto main() -> int
           bag.add (scenario, to_double (row.value ("ns_per_at")));
           return;
         }
-        if (metric == "first_select")
+        if (metric == "first_restrict")
         {
-          bag.add (scenario, to_double (row.value ("ns_per_select")));
+          bag.add (scenario, to_double (row.value ("ns_per_restrict")));
           return;
         }
         if (metric == "load")
@@ -387,7 +387,7 @@ auto main() -> int
     ( "Layout & & \\multicolumn{3}{c}{bytes}"
       " & \\multicolumn{2}{c}{first \\texttt{pos}}"
       " & \\multicolumn{2}{c}{first \\texttt{at}}"
-      " & \\multicolumn{2}{c}{first \\texttt{select}}"
+      " & \\multicolumn{2}{c}{first \\texttt{restrict}}"
       " & & \\multicolumn{2}{c}{\\texttt{pos}}"
       " & \\multicolumn{2}{c}{\\texttt{at}} \\\\\n"
     );
@@ -427,7 +427,8 @@ auto main() -> int
     {get_metric_value (ipt_algorithm, "bytes_per_point")};
   auto const ipt_first_pos {get_metric_value (ipt_algorithm, "first_pos")};
   auto const ipt_first_at {get_metric_value (ipt_algorithm, "first_at")};
-  auto const ipt_first_select {get_metric_value (ipt_algorithm, "first_select")};
+  auto const ipt_first_restrict
+    {get_metric_value (ipt_algorithm, "first_restrict")};
   auto const ipt_pos_random {get_metric_value (ipt_algorithm, "pos_random")};
   auto const ipt_at_random {get_metric_value (ipt_algorithm, "at_random")};
 
@@ -435,7 +436,6 @@ auto main() -> int
     || !std::isfinite (ipt_bytes_per_point)
     || !std::isfinite (ipt_first_pos)
     || !std::isfinite (ipt_first_at)
-    || !std::isfinite (ipt_first_select)
     || !std::isfinite (ipt_pos_random)
     || !std::isfinite (ipt_at_random)
      )
@@ -444,11 +444,19 @@ auto main() -> int
     return 1;
   }
 
+  if (!std::isfinite (ipt_first_restrict))
+  {
+    std::fprintf
+      ( stderr
+      , "warning: storage results do not contain first_restrict; emitting -- in that column\n"
+      );
+  }
+
   auto best_bytes_on_disk {std::nan ("")};
   auto best_bytes_per_point {std::nan ("")};
   auto best_first_pos {std::nan ("")};
   auto best_first_at {std::nan ("")};
-  auto best_first_select {std::nan ("")};
+  auto best_first_restrict {std::nan ("")};
   auto best_pos_random {std::nan ("")};
   auto best_at_random {std::nan ("")};
 
@@ -486,7 +494,8 @@ auto main() -> int
     update_smaller (best_bytes_per_point, get_metric_value (algorithm, "bytes_per_point"));
     update_smaller (best_first_pos, get_metric_value (algorithm, "first_pos"));
     update_smaller (best_first_at, get_metric_value (algorithm, "first_at"));
-    update_smaller (best_first_select, get_metric_value (algorithm, "first_select"));
+    update_smaller
+      (best_first_restrict, get_metric_value (algorithm, "first_restrict"));
     update_larger (best_pos_random, get_metric_value (algorithm, "pos_random"));
     update_larger (best_at_random, get_metric_value (algorithm, "at_random"));
   }
@@ -502,7 +511,7 @@ auto main() -> int
     auto const bytes_per_point {get_metric_value (algo, "bytes_per_point")};
     auto const first_pos {get_metric_value (algo, "first_pos")};
     auto const first_at {get_metric_value (algo, "first_at")};
-    auto const first_select {get_metric_value (algo, "first_select")};
+    auto const first_restrict {get_metric_value (algo, "first_restrict")};
     auto const pos_random {get_metric_value (algo, "pos_random")};
     auto const at_random {get_metric_value (algo, "at_random")};
     auto const bytes_on_disk_text
@@ -525,10 +534,10 @@ auto main() -> int
           ( fmt_us (first_at)
           , equal_with_tolerance (first_at, best_first_at)
           )};
-    auto const first_select_text
+    auto const first_restrict_text
       {bold_if_best
-          ( fmt_us (first_select)
-          , equal_with_tolerance (first_select, best_first_select)
+          ( fmt_us (first_restrict)
+          , equal_with_tolerance (first_restrict, best_first_restrict)
           )};
     auto const pos_random_text
       {bold_if_best
@@ -555,10 +564,10 @@ auto main() -> int
           ( fmt_ratio (first_at, ipt_first_at)
           , is_strictly_smaller (first_at, ipt_first_at)
           )};
-    auto const first_select_ratio_text
+    auto const first_restrict_ratio_text
       {bold_if_best
-          ( fmt_ratio (first_select, ipt_first_select)
-          , is_strictly_smaller (first_select, ipt_first_select)
+          ( fmt_ratio (first_restrict, ipt_first_restrict)
+          , is_strictly_smaller (first_restrict, ipt_first_restrict)
           )};
     auto const pos_random_ratio_text
       {bold_if_best
@@ -583,8 +592,8 @@ auto main() -> int
       , first_pos_ratio_text.c_str()
       , first_at_text.c_str()
       , first_at_ratio_text.c_str()
-      , first_select_text.c_str()
-      , first_select_ratio_text.c_str()
+      , first_restrict_text.c_str()
+      , first_restrict_ratio_text.c_str()
       , pos_random_text.c_str()
       , pos_random_ratio_text.c_str()
       , at_random_text.c_str()

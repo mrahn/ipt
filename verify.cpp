@@ -14,7 +14,7 @@ auto main() noexcept -> int try
 {
   verify::run_intersect();
   verify::run_corner_steal();
-  verify::run_select();
+  verify::run_restrict();
   verify::run_storage_roundtrip();
   verify::run_baseline_storage_roundtrip();
   verify::run_pos_miss();

@@ -10,7 +10,7 @@ The paper and benchmark code for the Adaptive Index-Point Translator
 - `texmf/` — ACM `acmart` class and bundled style files.
 - `Makefile` — build targets for the paper, plots, and benchmarks.
 - `verify.cpp` — small driver that runs the corner-steal,
-  cross-implementation select, and storage round-trip verifiers.
+  cross-implementation restrict, and storage round-trip verifiers.
   Built once per cache-flag combination by `make verify`.
 - `benchmark/Common.hpp` — shared benchmark infrastructure (`Data`,
   `BenchmarkContext`, `TimedBuild`, `TimedQueries`, the
@@ -29,8 +29,8 @@ The paper and benchmark code for the Adaptive Index-Point Translator
 - `plot/` — gnuplot scripts and small C++ extractors
   (`plot/*.cpp`, `plot/IPTPlot.hpp`) that turn raw result files into
   the TSV inputs of the figures and the generated LaTeX summary
-  tables used by the paper, plus `plot/select-restrict-summary.cpp`
-  for a stand-alone select/restrict summary report. The Makefile
+  tables used by the paper, plus `plot/restrict-summary.cpp`
+  for a stand-alone restriction summary report. The Makefile
   compiles the extractors on the fly and runs them in parallel.
 ## Prerequisites
 
@@ -160,8 +160,8 @@ the aggregated text files are deterministic.
 
 `make verify` compiles and runs `verify.cpp` for every combination of
 the four cache flags (2⁴ = 16) without `-DNDEBUG`, so assertions stay
-enabled.  It only runs the verifier paths (intersect, corner-steal,
-select, storage round-trip), not the full benchmark scenarios.
+enabled. It only runs the verifier paths (intersect, corner-steal,
+restrict, storage round-trip), not the full benchmark scenarios.
 This target therefore has the same `<print>` requirement as the full
 benchmark build.
 
@@ -239,7 +239,7 @@ separately with `make -jX plots`.
 |------------------|--------------------------------------------|
 | `make paper`     | Build IPT.pdf. Prefer `make -jX paper` to parallelize extractor builds and plot generation. |
 | `make plots`     | Build or refresh the generated figure assets and summary tables without running LaTeX. |
-| `make verify`    | Compile and run all 16 cache combinations with assertions enabled (corner-steal, select-verify, storage round-trip). |
+| `make verify`    | Compile and run all 16 cache combinations with assertions enabled (corner-steal, restrict-verify, storage round-trip). |
 | `make benchmark` | Full paper-reproduction suite (all per-scenario binaries, all 16 cache combinations of the cache-dependent algorithms, storage, pos-mix, 5D stress). |
 | `make benchmark-grid` | Grid sweep (both algorithm classes) for the reference cache combo. |
 | `make benchmark-X-cache-dependent` | One scenario, cache-dependent algorithms, reference combo. |

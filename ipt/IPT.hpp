@@ -6,7 +6,6 @@
 #include <ipt/Entry.hpp>
 #include <ipt/Index.hpp>
 #include <ipt/Point.hpp>
-#include <ipt/SelectView.hpp>
 #include <ipt/storage/Concepts.hpp>
 #include <ipt/storage/Vector.hpp>
 #include <optional>
@@ -62,13 +61,9 @@ namespace ipt
       ;
     [[nodiscard]] constexpr auto size() const noexcept -> Index;
 
-    // Lazy selection view: yields the per-entry intersection cuboids of
-    // *this with the query, in IPT lex order. The result is an
-    // input_range of Cuboid<D>.
-    //
-    [[nodiscard]] constexpr auto select
+    [[nodiscard]] auto restrict
       ( Cuboid<D>
-      ) const noexcept -> SelectView<D>
+      ) const -> std::optional<IPT<D>>
       ;
 
     [[nodiscard]] constexpr auto operator==

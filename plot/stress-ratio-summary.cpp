@@ -30,7 +30,7 @@ namespace
     bool is_throughput;
   };
 
-  constexpr auto metric_specs() noexcept -> std::array<MetricSpec, 9>
+  constexpr auto metric_specs() noexcept -> std::array<MetricSpec, 7>
   {
     return
       { MetricSpec
@@ -57,16 +57,6 @@ namespace
           { "at_all"
           , "\\texttt{at\\_all}"
           , true
-          }
-      , MetricSpec
-          { "select_d001"
-          , "\\texttt{select\\_d0.01}"
-          , false
-          }
-      , MetricSpec
-          { "select_d01"
-          , "\\texttt{select\\_d0.1}"
-          , false
           }
       , MetricSpec
           { "restrict_d001"
@@ -118,11 +108,6 @@ namespace
     if (metric == "at_random" || metric == "at_all")
     {
       return to_double (row.value ("Mat_per_sec"));
-    }
-
-    if (metric == "select_d001" || metric == "select_d01")
-    {
-      return to_double (row.value ("ns_per_select"));
     }
 
     return to_double (row.value ("ns_per_restrict"));

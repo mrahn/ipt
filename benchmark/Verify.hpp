@@ -1,10 +1,11 @@
-// Verify driver functions: round-trip, intersect, select equivalence
+// Verify driver functions: round-trip, intersect, restrict equivalence
 // across all backends.  Include this from a debug build only (i.e.
 // without -DNDEBUG); the verify::* helpers are also gated by
 // #ifndef NDEBUG so that releasing -DNDEBUG drops them entirely.
 //
 #pragma once
 
+#include <utility>
 #include <benchmark/Common.hpp>
 
 #ifndef NDEBUG
@@ -154,7 +155,7 @@ namespace verify
       check (std::ranges::is_sorted (points), "enumerate sorted");
     }
 
-    // IPT::select on a small synthetic IPT.
+    // IPT::restrict on a small synthetic IPT.
     {
       auto cuboids {std::vector<Cuboid<2>>
         { Cuboid<2> {std::array<Ruler, 2> {Ruler {0, 1, 3}, Ruler {0, 1, 5}}}
@@ -175,51 +176,46 @@ namespace verify
       auto const query
         { Cuboid<2> {std::array<Ruler, 2> {Ruler {2, 1, 8}, Ruler {1, 1, 3}}} };
 
-      auto results {std::vector<Cuboid<2>> {}};
-      for (auto const& cuboid : ipt.select (query))
-      {
-        results.push_back (cuboid);
-      }
-      check (results.size() == 3, "select yields 3 sub-cuboids");
-
-      auto const expected {std::vector<Cuboid<2>>
+      auto const expected_cuboids {std::vector<Cuboid<2>>
         { Cuboid<2> {std::array<Ruler, 2> {Ruler {2, 1, 3}, Ruler {1, 1, 3}}}
         , Cuboid<2> {std::array<Ruler, 2> {Ruler {3, 1, 7}, Ruler {1, 1, 3}}}
         , Cuboid<2> {std::array<Ruler, 2> {Ruler {7, 1, 8}, Ruler {1, 1, 3}}}
         }};
-      check (results == expected, "select sub-cuboids match expected");
+      auto const expected {IPT<2> {std::from_range, expected_cuboids}};
+      auto const restricted {ipt.restrict (query)};
 
-      // Round-trip: from_range with the select view yields a sub-IPT
-      auto const sub {IPT<2> {std::from_range, ipt.select (query)}};
-      check (sub.number_of_entries() == 3, "round-trip entry count");
-      check (sub.size() == Index {12}, "round-trip size");
+      check (restricted.has_value(), "restrict returns non-empty optional");
+      check (restricted->number_of_entries() == 3, "restrict entry count");
+      check (restricted->size() == Index {12}, "restrict size");
+      check (*restricted == expected, "restrict sub-IPT matches expected");
 
-      auto round_trip_points {std::vector<Point<2>> {}};
-      for (auto i {Index {0}}; i < sub.size(); ++i)
+      auto restricted_points {std::vector<Point<2>> {}};
+      for (auto i {Index {0}}; i < restricted->size(); ++i)
       {
-        round_trip_points.push_back (sub.at (i));
+        restricted_points.push_back (restricted->at (i));
       }
 
-      auto selected_points {std::vector<Point<2>> {}};
-      for (auto const& cuboid : ipt.select (query))
+      auto expected_points {std::vector<Point<2>> {}};
+      for (auto const& cuboid : expected_cuboids)
       {
         for (auto const& point : enumerate (cuboid))
         {
-          selected_points.push_back (point);
+          expected_points.push_back (point);
         }
       }
-      std::ranges::sort (selected_points);
-      auto round_trip_points_sorted {round_trip_points};
-      std::ranges::sort (round_trip_points_sorted);
+      auto restricted_points_sorted {restricted_points};
+      std::ranges::sort (restricted_points_sorted);
+      std::ranges::sort (expected_points);
       check
-        ( round_trip_points_sorted == selected_points
-        , "round-trip points match selection"
+        ( restricted_points_sorted == expected_points
+        , "restrict points match expected"
         );
 
       auto const empty_query
         { Cuboid<2> {std::array<Ruler, 2> {Ruler {100, 1, 110}, Ruler {0, 1, 5}}} };
-      auto const empty_view {ipt.select (empty_query)};
-      check (std::begin (empty_view) == std::default_sentinel, "empty query yields empty view");
+      auto const empty_restricted {ipt.restrict (empty_query)};
+
+      check (!empty_restricted, "restrict returns empty optional");
     }
 
     std::print ("verify intersect_test: OK\n");
@@ -530,31 +526,44 @@ namespace verify
     std::print ("verify corner_steal: OK 12 cases\n");
   }
 
-  // ---- cross-implementation select verification --------------------
+  // ---- cross-implementation restrict verification ------------------
 
-  template<std::size_t D, typename Implementation>
-    [[nodiscard]] auto materialize_points
-      ( Implementation const& implementation
-      , Cuboid<D> const& query
+  template<std::size_t D>
+    [[nodiscard]] auto materialize_cuboid_points
+      ( Cuboid<D> const& cuboid
       ) -> std::vector<Point<D>>
   {
     auto points {std::vector<Point<D>> {}};
-    for (auto const& cuboid : implementation.select (query))
+    points.reserve (static_cast<std::size_t> (cuboid.size()));
+
+    for (auto const& point : enumerate (cuboid))
     {
-      for (auto const& point : enumerate (cuboid))
-      {
-        points.push_back (point);
-      }
+      points.push_back (point);
     }
+
     std::ranges::sort (points);
-    auto duplicate_points {std::ranges::unique (points)};
-    points.erase
-      (std::begin (duplicate_points), std::end (points));
     return points;
   }
 
   template<std::size_t D, typename Implementation>
-    auto check_one
+    [[nodiscard]] auto materialize_structure_points
+      ( Implementation const& implementation
+      ) -> std::vector<Point<D>>
+  {
+    auto points {std::vector<Point<D>> {}};
+    points.reserve (static_cast<std::size_t> (implementation.size()));
+
+    for (auto i {Index {0}}; i < implementation.size(); ++i)
+    {
+      points.push_back (implementation.at (i));
+    }
+
+    std::ranges::sort (points);
+    return points;
+  }
+
+  template<std::size_t D, typename Implementation>
+    auto check_restrict_one
       ( std::string_view name
       , Implementation const& implementation
       , Cuboid<D> const& query
@@ -562,23 +571,84 @@ namespace verify
       , std::size_t query_index
       ) -> bool
   {
-    auto const actual {materialize_points (implementation, query)};
-    if (actual != reference)
+    if (reference.empty())
+    {
+      try
+      {
+        auto const restricted {implementation.restrict (query)};
+
+        if (restricted)
+        {
+          std::print
+            ( stderr
+            , "MISMATCH restrict query={} implementation={} expected empty optional\n"
+            , query_index
+            , name
+            );
+          return false;
+        }
+      }
+      catch (std::exception const& error)
+      {
+        std::print
+          ( stderr
+          , "MISMATCH restrict query={} implementation={} unexpected_error={}\n"
+          , query_index
+          , name
+          , error.what()
+          );
+        return false;
+      }
+
+      return true;
+    }
+
+    try
+    {
+      auto const restricted {implementation.restrict (query)};
+
+      if (!restricted)
+      {
+        std::print
+          ( stderr
+          , "MISMATCH restrict query={} implementation={} expected non-empty optional\n"
+          , query_index
+          , name
+          );
+        return false;
+      }
+
+      auto const actual {materialize_structure_points<D> (*restricted)};
+
+      if (actual != reference)
+      {
+        std::print
+          ( stderr
+          , "MISMATCH restrict query={} implementation={} reference_size={} got_size={}\n"
+          , query_index
+          , name
+          , reference.size()
+          , actual.size()
+          );
+        return false;
+      }
+    }
+    catch (std::exception const& error)
     {
       std::print
         ( stderr
-        , "MISMATCH query={} implementation={} reference_size={} got_size={}\n"
+        , "MISMATCH restrict query={} implementation={} unexpected_error={}\n"
         , query_index
         , name
-        , reference.size()
-        , actual.size()
+        , error.what()
         );
       return false;
     }
+
     return true;
   }
 
-  inline auto run_select() -> void
+  inline auto run_restrict() -> void
   {
     auto const grid
       { Grid<3>
@@ -682,28 +752,155 @@ namespace verify
           }
         };
 
-      auto const reference {materialize_points (sorted_points_built, query)};
+      auto const reference {materialize_cuboid_points (query)};
 
-      any_failed |= !check_one ("dense-bitset", dense_bitset_built, query, reference, query_index);
-      any_failed |= !check_one ("block-bitmap", block_bitmap_built, query, reference, query_index);
-      any_failed |= !check_one ("roaring", roaring_built, query, reference, query_index);
-      any_failed |= !check_one ("lex-run", lex_run_built, query, reference, query_index);
-      any_failed |= !check_one ("row-csr-k1", row_csr_k1_built, query, reference, query_index);
-      any_failed |= !check_one ("row-csr-k2", row_csr_k2_built, query, reference, query_index);
-      any_failed |= !check_one ("regular-ipt", regular_ipt_built, query, reference, query_index);
-      any_failed |= !check_one ("greedy-plus-combine", greedy_plus_combine_built, query, reference, query_index);
-      any_failed |= !check_one ("greedy-plus-merge", greedy_plus_merge_built, query, reference, query_index);
-      any_failed |= !check_one ("grid", grid, query, reference, query_index);
+      any_failed |= !check_restrict_one
+        ( "sorted-points"
+        , sorted_points_built
+        , query
+        , reference
+        , query_index
+        );
+      any_failed |= !check_restrict_one ("dense-bitset", dense_bitset_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("block-bitmap", block_bitmap_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("roaring", roaring_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("lex-run", lex_run_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("row-csr-k1", row_csr_k1_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("row-csr-k2", row_csr_k2_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("regular-ipt", regular_ipt_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("greedy-plus-combine", greedy_plus_combine_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("greedy-plus-merge", greedy_plus_merge_built, query, reference, query_index);
+      any_failed |= !check_restrict_one ("grid", grid, query, reference, query_index);
     }
+
+    auto const empty_reference {std::vector<Point<3>> {}};
+    auto check_empty_query_case
+      { [&]
+          ( Cuboid<3> const& query
+          , std::size_t query_index
+          ) -> void
+        {
+          any_failed |= !check_restrict_one
+            ( "sorted-points"
+            , sorted_points_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "dense-bitset"
+            , dense_bitset_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "block-bitmap"
+            , block_bitmap_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "roaring"
+            , roaring_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "lex-run"
+            , lex_run_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "row-csr-k1"
+            , row_csr_k1_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "row-csr-k2"
+            , row_csr_k2_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "regular-ipt"
+            , regular_ipt_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "greedy-plus-combine"
+            , greedy_plus_combine_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "greedy-plus-merge"
+            , greedy_plus_merge_built
+            , query
+            , empty_reference
+            , query_index
+            );
+          any_failed |= !check_restrict_one
+            ( "grid"
+            , grid
+            , query
+            , empty_reference
+            , query_index
+            );
+        }
+      };
+
+    auto const outside_empty_query
+      { Cuboid<3>
+        { std::array<Ruler, 3>
+          { Ruler {100, 1, 101}
+          , Ruler {0, 1, 1}
+          , Ruler {0, 1, 1}
+          }
+        }
+      };
+    auto const partial_overlap_empty_query
+      { Cuboid<3>
+        { std::array<Ruler, 3>
+          { Ruler {-1, 2, 1}
+          , world.ruler (1)
+          , world.ruler (2)
+          }
+        }
+      };
+    auto const full_overlap_empty_query
+      { Cuboid<3>
+        { std::array<Ruler, 3>
+          { Ruler {-16, 32, 16}
+          , world.ruler (1)
+          , world.ruler (2)
+          }
+        }
+      };
+    constexpr auto empty_query_count {std::size_t {3}};
+
+    check_empty_query_case (outside_empty_query, query_count + 0);
+    check_empty_query_case (partial_overlap_empty_query, query_count + 1);
+    check_empty_query_case (full_overlap_empty_query, query_count + 2);
 
     if (any_failed)
     {
-      throw std::runtime_error {"verify select_verify: FAIL"};
+      throw std::runtime_error {"verify restrict: FAIL"};
     }
 
     std::print
-      ( "verify select_verify: OK {} queries, all implementations agree\n"
-      , query_count
+      ( "verify restrict: OK {} queries, all implementations agree\n"
+      , query_count + empty_query_count
       );
   }
 
@@ -835,7 +1032,7 @@ namespace verify
       try
       {
         auto const bad {ipt::storage::MMap<3> {path}};
-        (void) bad;
+        std::ignore = bad;
       }
       catch (std::runtime_error const&)
       {
@@ -1034,7 +1231,7 @@ namespace verify
               { SortedPoints<3, ipt::baseline::sorted_points::storage::MMap<3>>
                   {std::in_place, path}
               };
-            (void) bad;
+            std::ignore = bad;
           }
         , "sorted-points"
         );
@@ -1080,7 +1277,7 @@ namespace verify
               { DenseBitset<3, ipt::baseline::dense_bitset::storage::MMap<3>>
                   {std::in_place, path}
               };
-            (void) bad;
+            std::ignore = bad;
           }
         , "dense-bitset"
         );
@@ -1128,7 +1325,7 @@ namespace verify
               { BlockBitmap<3, ipt::baseline::block_bitmap::storage::MMap<3>>
                   {std::in_place, path}
               };
-            (void) bad;
+            std::ignore = bad;
           }
         , "block-bitmap"
         );
@@ -1174,7 +1371,7 @@ namespace verify
               { LexRun<3, ipt::baseline::lex_run::storage::MMap<3>>
                   {std::in_place, path}
               };
-            (void) bad;
+            std::ignore = bad;
           }
         , "lex-run"
         );
@@ -1210,7 +1407,7 @@ namespace verify
           {
             auto const bad
               { ipt::baseline::row_csr::storage::MMap<3, 1> {path} };
-            (void) bad;
+            std::ignore = bad;
           }
         , "row-csr-k1"
         );
@@ -1246,7 +1443,7 @@ namespace verify
           {
             auto const bad
               { ipt::baseline::row_csr::storage::MMap<3, 2> {path} };
-            (void) bad;
+            std::ignore = bad;
           }
         , "row-csr-k2"
         );
@@ -1292,7 +1489,7 @@ namespace verify
               { Roaring<3, ipt::baseline::roaring::storage::MMap<3>>
                   {std::in_place, path}
               };
-            (void) bad;
+            std::ignore = bad;
           }
         , "roaring"
         );
@@ -1338,7 +1535,7 @@ namespace verify
         , [&]()
           {
             auto const bad {ipt::baseline::grid::read_layout<3> (path)};
-            (void) bad;
+            std::ignore = bad;
           }
         , "grid"
         );

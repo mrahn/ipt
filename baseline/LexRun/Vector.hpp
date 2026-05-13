@@ -27,6 +27,7 @@ namespace ipt::baseline::lex_run::storage
     [[nodiscard]] auto empty() const noexcept -> bool;
 
     auto bump_total_points() noexcept -> void;
+    auto add_total_points (ipt::Index) noexcept -> void;
 
   private:
     std::vector<Run<D>> _runs;

@@ -35,4 +35,10 @@ namespace ipt::baseline::lex_run::storage
   {
     _total_points += 1;
   }
+
+  template<std::size_t D>
+    auto Vector<D>::add_total_points (ipt::Index count) noexcept -> void
+  {
+    _total_points += count;
+  }
 }

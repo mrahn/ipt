@@ -95,24 +95,31 @@ namespace ipt::baseline
   }
 
   template<std::size_t D, sorted_points::Storage<D> S>
-    auto SortedPoints<D, S>::select
+    auto SortedPoints<D, S>::restrict
       ( Cuboid<D> query
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<SortedPoints<D>>
   {
     auto const points {_storage.points()};
-    // Cuboid::lub() is the inclusive lex-maximum (last contained
-    // point), so the iteration range is [lower_bound(glb),
-    // upper_bound(lub)).
     auto const lo {std::ranges::lower_bound (points, query.glb())};
     auto const hi {std::ranges::upper_bound (points, query.lub())};
+    auto restricted_points {std::vector<Point<D>> {}};
+    restricted_points.reserve
+      (static_cast<std::size_t> (std::ranges::distance (lo, hi)));
 
     for (auto point {lo}; point != hi; ++point)
     {
       if (query.contains (*point))
       {
-        co_yield singleton_cuboid (*point);
+        restricted_points.push_back (*point);
       }
     }
+
+    if (restricted_points.empty())
+    {
+      return std::nullopt;
+    }
+
+    return SortedPoints<D> {std::in_place, std::move (restricted_points)};
   }
 
   template<std::size_t D, sorted_points::Storage<D> S>

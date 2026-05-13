@@ -64,7 +64,7 @@ namespace ipt::baseline
       _storage.push_row_offset
         (static_cast<Index> (_storage.column_values().size()));
       _storage.push_row_key (row_key);
-    }
+      }
 
     _storage.push_column_value (column_value);
     _last_added = point;
@@ -110,10 +110,8 @@ namespace ipt::baseline
       throw std::out_of_range {"RowCSR::at: index out of range"};
     }
 
-    // Find last row_offsets entry that is <= index.
     auto const row_offset_upper_bound
-      { std::ranges::upper_bound (row_offsets, index)
-      };
+      {std::ranges::upper_bound (row_offsets, index)};
     auto const row
       { static_cast<std::size_t>
           ( std::distance
@@ -164,7 +162,6 @@ namespace ipt::baseline
         }
       );
 
-    // Locate row.
     auto const row_index
       { std::invoke
         ( [&]() -> std::size_t
@@ -187,7 +184,6 @@ namespace ipt::baseline
     auto const row_begin {row_offsets[row_index]};
     auto const row_end {row_offsets[row_index + 1]};
 
-    // Locate column within row.
     auto const row_column_values
       { std::ranges::subrange
         ( std::cbegin (column_values) + row_begin
@@ -195,8 +191,8 @@ namespace ipt::baseline
         )
       };
     auto const column_iterator
-      { std::ranges::lower_bound (row_column_values, column_value)
-      };
+      {std::ranges::lower_bound (row_column_values, column_value)};
+
     if (  column_iterator == std::end (row_column_values)
        || *column_iterator != column_value
        )
@@ -264,8 +260,7 @@ namespace ipt::baseline
         )
       };
     auto const column_iterator
-      { std::ranges::lower_bound (row_column_values, column_value)
-      };
+      {std::ranges::lower_bound (row_column_values, column_value)};
 
     if (  column_iterator == std::end (row_column_values)
        || *column_iterator != column_value
@@ -280,21 +275,68 @@ namespace ipt::baseline
 
   template<std::size_t D, std::size_t K, row_csr::Storage<D, K> S>
     requires (K >= 1 && K < D)
-  auto RowCSR<D, K, S>::select
+  auto RowCSR<D, K, S>::restrict
     ( Cuboid<D> query
-    ) const -> std::generator<Cuboid<D>>
+    ) const -> std::optional<RowCSR<D, K>>
   {
     auto const row_keys {_storage.row_keys()};
     auto const row_offsets {_storage.row_offsets()};
     auto const column_values {_storage.column_values()};
+    auto query_row_glb {RowKey {}};
+    auto query_row_lub {RowKey {}};
+    auto query_column_glb {ColumnValue {}};
+    auto query_column_lub {ColumnValue {}};
 
-    // Walk all rows whose key lies in the query's row prefix; for each
-    // row, scan its column entries and yield those falling in the
-    // query's column suffix.
-    for (auto row {std::size_t {0}}; row < row_keys.size(); ++row)
+    std::ranges::transform
+      ( std::views::iota (std::size_t {0}, K)
+      , std::ranges::begin (query_row_glb)
+      , [&] (auto d) noexcept
+        {
+          return query.ruler (d).begin();
+        }
+      );
+
+    std::ranges::transform
+      ( std::views::iota (std::size_t {0}, K)
+      , std::ranges::begin (query_row_lub)
+      , [&] (auto d) noexcept
+        {
+          return query.ruler (d).lub();
+        }
+      );
+
+    std::ranges::transform
+      ( std::views::iota (std::size_t {0}, D - K)
+      , std::ranges::begin (query_column_glb)
+      , [&] (auto d) noexcept
+        {
+          return query.ruler (K + d).begin();
+        }
+      );
+
+    std::ranges::transform
+      ( std::views::iota (std::size_t {0}, D - K)
+      , std::ranges::begin (query_column_lub)
+      , [&] (auto d) noexcept
+        {
+          return query.ruler (K + d).lub();
+        }
+      );
+
+    auto const row_begin_iterator
+      {std::ranges::lower_bound (row_keys, query_row_glb)};
+    auto const row_end_iterator
+      {std::ranges::upper_bound (row_keys, query_row_lub)};
+    auto restricted_storage {row_csr::storage::Vector<D, K> {}};
+    auto any_selected {false};
+
+    for (auto row_iterator {row_begin_iterator}; row_iterator != row_end_iterator; ++row_iterator)
     {
-      auto const& row_key {row_keys[row]};
-
+      auto const& row_key {*row_iterator};
+      auto const row
+        { static_cast<std::size_t>
+          (std::distance (std::cbegin (row_keys), row_iterator))
+        };
       auto in_prefix {true};
 
       for (auto d {std::size_t {0}}; d < K && in_prefix; ++d)
@@ -312,13 +354,32 @@ namespace ipt::baseline
 
       auto const row_begin {row_offsets[row]};
       auto const row_end {row_offsets[row + 1]};
+      auto const row_column_values
+        { std::ranges::subrange
+          ( std::cbegin (column_values) + row_begin
+          , std::cbegin (column_values) + row_end
+          )
+        };
+      auto const column_begin_iterator
+        { std::ranges::lower_bound
+          ( row_column_values
+          , query_column_glb
+          )
+        };
+      auto const column_end_iterator
+        { std::ranges::upper_bound
+          ( row_column_values
+          , query_column_lub
+          )
+        };
+      auto row_written {false};
 
-      for (auto i {row_begin}; i < row_end; ++i)
+      for ( auto column_iterator {column_begin_iterator}
+          ; column_iterator != column_end_iterator
+          ; ++column_iterator
+          )
       {
-        auto const& column_value
-          { column_values[static_cast<std::size_t> (i)]
-          };
-
+        auto const& column_value {*column_iterator};
         auto in_suffix {true};
 
         for (auto d {std::size_t {0}}; d < D - K && in_suffix; ++d)
@@ -334,21 +395,30 @@ namespace ipt::baseline
           continue;
         }
 
-        auto coordinates {std::array<Coordinate, D>{}};
-
-        for (auto d {std::size_t {0}}; d < K; ++d)
+        if (!row_written)
         {
-          coordinates[d] = row_key[d];
+          restricted_storage.push_row_offset
+            ( static_cast<Index>
+              (restricted_storage.column_values().size())
+            );
+          restricted_storage.push_row_key (row_key);
+          row_written = true;
         }
 
-        for (auto d {std::size_t {0}}; d < D - K; ++d)
-        {
-          coordinates[K + d] = column_value[d];
-        }
-
-        co_yield singleton_cuboid (Point<D> {coordinates});
+        restricted_storage.push_column_value (column_value);
+        any_selected = true;
       }
     }
+
+    if (!any_selected)
+    {
+      return std::nullopt;
+    }
+
+    restricted_storage.push_row_offset
+      (static_cast<Index> (restricted_storage.column_values().size()));
+
+    return RowCSR<D, K> {std::in_place, std::move (restricted_storage)};
   }
 
   template<std::size_t D, std::size_t K, row_csr::Storage<D, K> S>

@@ -1,11 +1,13 @@
 #include <algorithm>
 #include <array>
+#include <baseline/detail/select.hpp>
 #include <baseline/enumerate.hpp>
 #include <bit>
 #include <cassert>
 #include <functional>
 #include <ipt/Coordinate.hpp>
 #include <iterator>
+#include <limits>
 #include <optional>
 #include <ranges>
 #include <stdexcept>
@@ -413,59 +415,187 @@ namespace ipt::baseline
   }
 
   template<std::size_t D, block_bitmap::Storage<D> S>
-    auto BlockBitmap<D, S>::select
+    auto BlockBitmap<D, S>::restrict
       ( Cuboid<D> query
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<BlockBitmap<D>>
   {
     auto const tiles {_storage.tiles()};
-    auto const grid_cuboid {to_ipt_cuboid (_grid)};
-    auto const intersection {grid_cuboid.intersect (query)};
+    auto const origin {_grid.origin()};
+    auto const strides {_grid.strides()};
+    auto const shape_statistics {detail::query_shape_statistics (_grid, query)};
 
-    if (!intersection)
+    if (!shape_statistics)
     {
-      co_return;
+      return std::nullopt;
     }
 
-    for (auto const& point : enumerate (*intersection))
-    {
-      // The point is guaranteed in-grid because it came from
-      // intersecting with the grid's own cuboid.
-      auto tile_coords {std::array<Index, D>{}};
-      auto local_coords {std::array<Index, D>{}};
+    auto const& statistics {*shape_statistics};
+    auto restricted
+      {BlockBitmap<D> {detail::grid_from_cuboid (statistics.intersection)}};
+    auto const use_pointwise_probe
+      { statistics.point_count <= Index {4} * tile_volume
+     || statistics.points_per_interval < Index {8} * tile_extent
+      };
 
-      for (auto d {std::size_t {0}}; d < D; ++d)
+    if (use_pointwise_probe)
+    {
+      for (auto const& point : enumerate (statistics.intersection))
       {
-        auto const grid_coordinate
+        auto tile_coordinates {std::array<Index, D> {}};
+        auto local_coordinates {std::array<Index, D> {}};
+
+        for (auto d {std::size_t {0}}; d < D; ++d)
+        {
+          auto const grid_coordinate
+            { static_cast<Index>
+              ((point[d] - origin[d]) / strides[d])
+            };
+
+          tile_coordinates[d] = grid_coordinate / tile_extent;
+          local_coordinates[d] = grid_coordinate % tile_extent;
+        }
+
+        auto tile_index {Index {0}};
+
+        for (auto d {std::size_t {0}}; d < D; ++d)
+        {
+          tile_index = tile_index * _tile_counts[d] + tile_coordinates[d];
+        }
+
+        auto bit_index {Index {0}};
+
+        for (auto d {std::size_t {0}}; d < D; ++d)
+        {
+          bit_index = bit_index * tile_extent + local_coordinates[d];
+        }
+
+        auto const tile_offset {static_cast<std::size_t> (tile_index)};
+        auto const mask {Word {1} << static_cast<unsigned> (bit_index)};
+
+        if ((tiles[tile_offset] & mask) != 0)
+        {
+          restricted.add (point);
+        }
+      }
+    }
+    else
+    {
+      for ( auto const& [first, last]
+          : detail::query_linear_intervals (_grid, statistics.intersection)
+          )
+      {
+        auto const first_point {_grid.at (first)};
+        auto const last_point {_grid.at (last)};
+        auto tile_coords {std::array<Index, D> {}};
+        auto local_coords {std::array<Index, D> {}};
+
+        for (auto d {std::size_t {0}}; d < D; ++d)
+        {
+          auto const grid_coordinate
+            { static_cast<Index>
+              ((first_point[d] - origin[d]) / strides[d])
+            };
+
+          tile_coords[d] = grid_coordinate / tile_extent;
+          local_coords[d] = grid_coordinate % tile_extent;
+        }
+
+        auto prefix_tile_index {Index {0}};
+
+        for (auto d {std::size_t {0}}; d + 1 < D; ++d)
+        {
+          prefix_tile_index = prefix_tile_index * _tile_counts[d] + tile_coords[d];
+        }
+
+        auto prefix_bit_index {Index {0}};
+
+        for (auto d {std::size_t {0}}; d + 1 < D; ++d)
+        {
+          prefix_bit_index = prefix_bit_index * tile_extent + local_coords[d];
+        }
+
+        auto const base_bit_index {prefix_bit_index * tile_extent};
+        auto const first_grid_coordinate_last
           { static_cast<Index>
-            ((point[d] - _grid.origin()[d]) / _grid.strides()[d])
+            ((first_point[D - 1] - origin[D - 1]) / strides[D - 1])
           };
+        auto const last_grid_coordinate_last
+          { static_cast<Index>
+            ((last_point[D - 1] - origin[D - 1]) / strides[D - 1])
+          };
+        auto const first_tile_coordinate_last
+          {first_grid_coordinate_last / tile_extent};
+        auto const last_tile_coordinate_last
+          {last_grid_coordinate_last / tile_extent};
+        auto coordinates {std::array<Coordinate, D> {}};
 
-        tile_coords[d] = grid_coordinate / tile_extent;
-        local_coords[d] = grid_coordinate % tile_extent;
-      }
+        std::ranges::transform
+          ( std::views::iota (std::size_t {0}, D)
+          , std::ranges::begin (coordinates)
+          , [&] (auto d) noexcept
+            {
+              return first_point[d];
+            }
+          );
 
-      auto tile_index {Index {0}};
+        for ( auto tile_coordinate_last {first_tile_coordinate_last}
+            ; tile_coordinate_last <= last_tile_coordinate_last
+            ; ++tile_coordinate_last
+            )
+        {
+          auto const tile_index
+            {prefix_tile_index * _tile_counts[D - 1] + tile_coordinate_last};
+          auto masked {tiles[static_cast<std::size_t> (tile_index)]};
+          auto const first_local_last
+            { tile_coordinate_last == first_tile_coordinate_last
+                ? first_grid_coordinate_last % tile_extent
+                : Index {0}
+            };
+          auto const last_local_last
+            { tile_coordinate_last == last_tile_coordinate_last
+                ? last_grid_coordinate_last % tile_extent
+                : tile_extent - 1
+            };
+          auto const first_bit {base_bit_index + first_local_last};
+          auto const last_bit {base_bit_index + last_local_last};
+          auto const lower_mask
+            { first_bit == 0
+                ? Word {0}
+                : (Word {1} << static_cast<unsigned> (first_bit)) - 1
+            };
+          auto const upper_mask
+            { last_bit + 1 == tile_volume
+                ? std::numeric_limits<Word>::max()
+                : (Word {1} << static_cast<unsigned> (last_bit + 1)) - 1
+            };
 
-      for (auto d {std::size_t {0}}; d < D; ++d)
-      {
-        tile_index = tile_index * _tile_counts[d] + tile_coords[d];
-      }
+          masked &= ~lower_mask;
+          masked &= upper_mask;
 
-      auto bit_index {Index {0}};
+          while (masked != 0)
+          {
+            auto const bit_index
+              {static_cast<Index> (std::countr_zero (masked))};
+            auto const local_coordinate_last {bit_index - base_bit_index};
 
-      for (auto d {std::size_t {0}}; d < D; ++d)
-      {
-        bit_index = bit_index * tile_extent + local_coords[d];
-      }
-
-      auto const tile_i {static_cast<std::size_t> (tile_index)};
-      auto const mask {Word {1} << static_cast<unsigned> (bit_index)};
-
-      if ((tiles[tile_i] & mask) != 0)
-      {
-        co_yield singleton_cuboid (point);
+            coordinates[D - 1] = origin[D - 1]
+              + static_cast<Coordinate>
+                  (tile_coordinate_last * tile_extent + local_coordinate_last)
+                * strides[D - 1]
+              ;
+            restricted.add (Point<D> {coordinates});
+            masked &= masked - 1;
+          }
+        }
       }
     }
+
+    if (restricted.size() == Index {0})
+    {
+      return std::nullopt;
+    }
+
+    return std::move (restricted).build();
   }
 
   template<std::size_t D, block_bitmap::Storage<D> S>

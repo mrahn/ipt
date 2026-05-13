@@ -227,17 +227,6 @@ auto main() -> int
           return;
         }
 
-        if (  metric == "select_d0001"
-           || metric == "select_d001"
-           || metric == "select_d01"
-           || metric == "select_d1"
-           )
-        {
-          latencies[algorithm][metric].add
-            (to_double (row.value ("ns_per_select")));
-          return;
-        }
-
         if (  metric == "restrict_d0001"
            || metric == "restrict_d001"
            || metric == "restrict_d01"
@@ -336,16 +325,6 @@ auto main() -> int
     ( "\\texttt{at\\_all} & Mat/s & %s & %s \\\\\n"
     , fmt_rate_value (rates[algo]["at_all"]).c_str()
     , fmt_rate_percentiles (rates[algo]["at_all"]).c_str()
-    );
-  std::printf
-    ( "\\texttt{select\\_d0.01} & $\\mu$s/query & %s & %s \\\\\n"
-    , fmt_latency_us_value (latencies[algo]["select_d001"]).c_str()
-    , fmt_latency_us_percentiles (latencies[algo]["select_d001"]).c_str()
-    );
-  std::printf
-    ( "\\texttt{select\\_d0.1} & $\\mu$s/query & %s & %s \\\\\n"
-    , fmt_latency_us_value (latencies[algo]["select_d01"]).c_str()
-    , fmt_latency_us_percentiles (latencies[algo]["select_d01"]).c_str()
     );
   std::printf
     ( "\\texttt{restrict\\_d0.01} & $\\mu$s/query & %s & %s \\\\\n"

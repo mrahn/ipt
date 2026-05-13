@@ -5,7 +5,6 @@
 #include <baseline/Grid/Grid.hpp>
 #include <concepts>
 #include <cstddef>
-#include <generator>
 #include <ipt/Cuboid.hpp>
 #include <ipt/Index.hpp>
 #include <ipt/Point.hpp>
@@ -93,7 +92,10 @@ namespace ipt::baseline
       ) const noexcept -> std::optional<Index>
       ;
 
-    [[nodiscard]] auto select (Cuboid<D>) const -> std::generator<Cuboid<D>>;
+    [[nodiscard]] auto restrict
+      ( Cuboid<D>
+      ) const -> std::optional<BlockBitmap<D>>
+      ;
 
     [[nodiscard]] auto storage() const noexcept -> S const&;
 

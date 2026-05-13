@@ -13,6 +13,13 @@ namespace ipt
   namespace detail
   {
     template<std::size_t D>
+      struct OverlapRange
+      {
+        Entry<D> const* first;
+        Entry<D> const* last;
+      };
+
+    template<std::size_t D>
       inline auto validate_entries (std::span<Entry<D> const> entries) -> void
     {
       if (entries.empty())
@@ -34,6 +41,48 @@ namespace ipt
             }
           )
         );
+    }
+
+    template<std::size_t D>
+      inline auto overlap_range
+        ( std::span<Entry<D> const> entries
+        , Cuboid<D> const&        query
+        ) noexcept -> OverlapRange<D>
+    {
+      if (entries.empty())
+      {
+        return OverlapRange<D> {nullptr, nullptr};
+      }
+
+      auto const query_glb {query.glb()};
+      auto const query_lub {query.lub()};
+      auto const first
+        { std::ranges::lower_bound
+          ( entries
+          , query_glb
+          , std::ranges::less{}
+          , [] (Entry<D> const& entry) noexcept
+            {
+              return entry.lub();
+            }
+          )
+        };
+      auto const last
+        { std::ranges::upper_bound
+          ( entries
+          , query_lub
+          , std::ranges::less{}
+          , [] (Entry<D> const& entry) noexcept
+            {
+              return entry.cuboid().glb();
+            }
+          )
+        };
+
+      return OverlapRange<D>
+        { std::to_address (first)
+        , std::to_address (last)
+        };
     }
   }
 
@@ -219,57 +268,36 @@ namespace ipt
   }
 
   template<std::size_t D, Storage<D> Storage>
-    constexpr auto IPT<D, Storage>::select
+    auto IPT<D, Storage>::restrict
       ( Cuboid<D> query
-      ) const noexcept -> SelectView<D>
+      ) const -> std::optional<IPT<D>>
   {
     auto const entries {_storage.entries()};
+    auto const overlap {detail::overlap_range<D> (entries, query)};
 
-    if (entries.empty())
+    if (overlap.first == nullptr)
     {
-      return {};
+      return std::nullopt;
     }
 
-    auto const query_glb {query.glb()};
-    auto const query_lub {query.lub()};
+    auto restricted_cuboids {std::vector<Cuboid<D>> {}};
+    restricted_cuboids.reserve
+      (static_cast<std::size_t> (overlap.last - overlap.first));
 
-    // First entry whose lub() is not strictly lex-less than query.glb():
-    // any earlier entry sits entirely lex-before the query and cannot
-    // overlap.
-    auto const first
-      { std::ranges::lower_bound
-        ( entries
-        , query_glb
-        , std::ranges::less{}
-        , [] (Entry<D> const& entry) noexcept
-          {
-            return entry.lub();
-          }
-        )
-      };
+    for (auto const& entry : std::span<Entry<D> const> {overlap.first, overlap.last})
+    {
+      if (auto inter {entry.cuboid().intersect (query)})
+      {
+        restricted_cuboids.push_back (std::move (*inter));
+      }
+    }
 
-    // First entry whose glb() is lex-strictly-greater than query.lub():
-    // any such entry sits entirely lex-after the query.  Note that
-    // query.lub() is the inclusive lex-maximum (last contained point),
-    // so an entry whose glb() equals query.lub() may still overlap the
-    // query and must be kept in range.
-    auto const last
-      { std::ranges::upper_bound
-        ( entries
-        , query_lub
-        , std::ranges::less{}
-        , [] (Entry<D> const& entry) noexcept
-          {
-            return entry.cuboid().glb();
-          }
-        )
-      };
+    if (restricted_cuboids.empty())
+    {
+      return std::nullopt;
+    }
 
-    return SelectView<D>
-      { std::to_address (first)
-      , std::to_address (last)
-      , std::move (query)
-      };
+    return IPT<D> {std::from_range, std::move (restricted_cuboids)};
   }
 
   template<std::size_t D, Storage<D> Storage>

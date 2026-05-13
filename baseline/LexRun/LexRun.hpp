@@ -4,7 +4,6 @@
 #include <baseline/LexRun/Vector.hpp>
 #include <concepts>
 #include <cstddef>
-#include <generator>
 #include <ipt/Cuboid.hpp>
 #include <ipt/Index.hpp>
 #include <ipt/Point.hpp>
@@ -49,19 +48,14 @@ namespace ipt::baseline
       ) const noexcept -> std::optional<Index>
       ;
 
-    [[nodiscard]] auto select
+    [[nodiscard]] auto restrict
       ( Cuboid<D>
-      ) const -> std::generator<Cuboid<D>>
+      ) const -> std::optional<LexRun<D>>
       ;
 
     [[nodiscard]] auto storage() const noexcept -> S const&;
 
   private:
-    [[nodiscard]] static auto make_run_cuboid
-      ( Run const&
-      ) -> Cuboid<D>
-      ;
-
     S _storage;
     std::optional<Point<D>> _last_added;
   };

@@ -50,9 +50,9 @@ PLOT_NAMES += pos-ratio-vs-density
 PLOT_NAMES += pos-mix-summary
 
 # Extra extractors that produce the generated summary tables and the
-# stand-alone select/restrict report.
+# stand-alone restrict report.
 EXTRA_EXTRACTORS := \
-	select-restrict-summary \
+	restrict-summary \
 	stress-summary \
 	stress-ratio-summary \
 	storage-summary
