@@ -74,6 +74,8 @@ EXTRACT_NAMES := $(PLOT_NAMES) $(EXTRA_EXTRACTORS)
 EXTRACT_BIN_DIR := generated/extract
 EXTRACT_HEADER  := $(PLOT_DIR)/IPTPlot.hpp
 EXTRACT_BINS    := $(patsubst %,$(EXTRACT_BIN_DIR)/%,$(EXTRACT_NAMES))
+EXTRACT_OBJ     := $(EXTRACT_BIN_DIR)/IPTPlot.o
+EXTRACT_LIB     := $(EXTRACT_BIN_DIR)/libiptplot.a
 
 # Prefer the newer Rocky 9.7 i7 reruns on kernel 7 over the older
 # kernel 6.19 snapshots.
@@ -443,14 +445,22 @@ benchmark: benchmark-build | $(RESULT_DIR)
 TSVS := $(patsubst %,$(PLOT_DIR)/%.tsv,$(PLOT_NAMES))
 PLOTS := $(foreach p,$(PLOT_NAMES),generated/$(p).tex generated/$(p).pdf)
 
-# Compile each extractor on the fly. They share IPTPlot.hpp; touching
-# the header rebuilds them all. Multiple extractors build (and run) in
-# parallel under `make -j`.
+# Compile IPTPlot once into a shared archive, then build each
+# extractor's own translation unit and link against that archive.
+# Touching IPTPlot.hpp rebuilds the archive and the dependent
+# extractors. Multiple extractors still build (and run) in parallel
+# under `make -j`.
 $(EXTRACT_BIN_DIR):
 	mkdir -p $@
 
-$(EXTRACT_BIN_DIR)/%: $(PLOT_DIR)/%.cpp $(PLOT_DIR)/IPTPlot.cpp $(EXTRACT_HEADER) | $(EXTRACT_BIN_DIR)
-	$(CXX) $(EXTRACT_CXXFLAGS) $(EXTRACT_LDFLAGS) -o $@ $< $(PLOT_DIR)/IPTPlot.cpp
+$(EXTRACT_OBJ): $(PLOT_DIR)/IPTPlot.cpp $(EXTRACT_HEADER) | $(EXTRACT_BIN_DIR)
+	$(CXX) $(EXTRACT_CXXFLAGS) -c -o $@ $<
+
+$(EXTRACT_LIB): $(EXTRACT_OBJ)
+	ar rcs $@ $<
+
+$(EXTRACT_BIN_DIR)/%: $(PLOT_DIR)/%.cpp $(EXTRACT_LIB) $(EXTRACT_HEADER) | $(EXTRACT_BIN_DIR)
+	$(CXX) $(EXTRACT_CXXFLAGS) $(EXTRACT_LDFLAGS) -o $@ $< $(EXTRACT_LIB)
 
 define TSV_RULE
 $(PLOT_DIR)/$(1).tsv: $$(EXTRACT_BIN_DIR)/$(1) $$(RESULT_FILES)
